@@ -38,4 +38,7 @@ shown as real. FIRMS API quirks found while building this are listed in `docs/DE
 
 ## Status
 
-Phase 1 (scaffold) and Phase 2 (data layer) are done. See `CHANGELOG.md`.
+Phases 1 to 4 (scaffold, data layer, science core, API) are done; the web app is next. See
+`CHANGELOG.md`. A real-data validation report for Punjab/Haryana is in `docs/validation/`.
+
+API docs: run the API and open `/api/docs`.

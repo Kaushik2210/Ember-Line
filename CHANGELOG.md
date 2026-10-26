@@ -11,3 +11,21 @@
 - Parquet cache with atomic writes and partial-chunk handling; DuckDB store with tile de-dupe.
 - Resumable ingest, `scripts/prefetch.py` (dry run), SYNTHETIC generator and `scripts/make_synthetic.py`.
 - Found and handled live API limits: day range 1-5, 2 transactions per requested day.
+
+## Phase 3: science core
+- Quality policy (MODIS confidence, VIIRS classes, fire type, persistent heat-source mask).
+- Common grid (regular or H3) with det_count, active_1km and frp_sum_mw per cell and local day.
+- Aqua-MODIS vs SNPP-VIIRS coincident overpass matching with a co-observation proxy; 30 min window
+  chosen from measured offsets.
+- Normalisation: Huber, Theil-Sen, seasonal quantile mapping and isotonic, with leave-one-year-out
+  validation and cross-conformal intervals; daily harmonisation back to 2000; Terra-only model for
+  the years before Aqua.
+- Seasonality (climatology, per-season markers, STL) and anomalies (leave-one-year-out robust z,
+  sustained events, season ranking), plus NASA-sourced data-quality annotations.
+- Real-data validation report for Punjab/Haryana in `docs/validation/`.
+
+## Phase 4: API
+- FastAPI endpoints: analyze (jobs with SSE progress, idempotent, results cached on disk), result,
+  hotspots (capped at 50k, aggregated above), availability, regions, export (CSV, GeoJSON, methods card).
+- Guardrails (area, period, GeoJSON size), live fetch for uncached areas with a request cap, CORS
+  locked to the web origin.
