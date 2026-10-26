@@ -213,6 +213,9 @@ def test_terra_only_years_use_their_own_model_and_are_not_mistaken_for_quiet_yea
     early = h.filter(pl.col("modis_basis") == "terra")
     assert early["local_date"].max() < date(2002, 7, 15)
 
+    for ev in a.events:  # events in the Terra-only years say so, later ones do not
+        assert bool(ev.caveat) == (ev.start < AQUA_FIRE_START)
+
     # Calibrated: the Terra-only year 2001 sits at the level of the ordinary Terra+Aqua years
     # 2005-2006 (2004 is the injected extreme season; VIIRS-observed years excluded: 2006+).
     def total(year: int) -> float:

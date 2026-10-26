@@ -74,6 +74,7 @@ class Event:
     peak_z: float
     mean_z: float
     excess: float  # sum of (value - baseline) over the event, original units
+    caveat: str = ""  # why this event deserves less trust, if it does
 
 
 def flag_events(
@@ -182,11 +183,12 @@ def rank_seasons(totals: pl.DataFrame) -> pl.DataFrame:
 def describe_event(e: Event, unit: str = "") -> str:
     kind = "above" if e.direction == "high" else "below"
     span = f"{e.start:%d %b %Y}" if e.days == 1 else f"{e.start:%d %b %Y} to {e.end:%d %b %Y}"
-    return (
+    text = (
         f"{span} ({e.days} days): activity ran {abs(e.mean_z):.1f} robust standard deviations "
         f"{kind} the typical level for those dates (peak {abs(e.peak_z):.1f}). Baseline is built "
         f"from the other years only{(' (' + unit + ')') if unit else ''}."
     )
+    return f"{text} {e.caveat}".strip()
 
 
 def describe_season(season: str, z: float, n_years: int) -> str:

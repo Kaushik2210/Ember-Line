@@ -203,3 +203,14 @@ def test_tiny_events_in_quiet_periods_are_dropped_by_the_materiality_floor() -> 
     assert len(flag_events(sc)) == 1  # a big z score...
     assert flag_events(sc, min_excess=50.0) == []  # ...but only ~11 units above baseline
     assert len(flag_events(sc, min_excess=5.0)) == 1
+
+
+def test_describe_event_appends_a_caveat_when_there_is_one() -> None:
+    from dataclasses import replace
+
+    ev = flag_events(
+        loyo_zscores(make_daily(extreme_year=2008, burst=(date(2004, 7, 10), 6, 8.0)))
+    )[0]
+    assert ev.caveat == "" and not describe_event(ev).endswith(" ")
+    flagged = replace(ev, caveat="Less reliable: test.")
+    assert describe_event(flagged).endswith("Less reliable: test.")

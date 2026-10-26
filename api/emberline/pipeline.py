@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 
 import numpy as np
@@ -273,6 +273,18 @@ def run_analysis(
         a.scores = loyo_zscores(a.harmonized)
         yearly_total = float(np.nansum(mat)) / len(years)
         a.events = flag_events(a.scores, min_excess=0.01 * yearly_total)  # >= 1% of a typical year
+        if a.early_cutoff is not None:
+            cutoff = a.early_cutoff
+            a.events = [
+                replace(
+                    e,
+                    caveat="Less reliable: this falls in the Terra-only years, when a single "
+                    "morning overpass sampled each day.",
+                )
+                if e.start < cutoff
+                else e
+                for e in a.events
+            ]
         try:
             a.seasons = rank_seasons(season_totals(a.harmonized))
         except ValueError as exc:
