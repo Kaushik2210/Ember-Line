@@ -51,3 +51,11 @@ export function reconstructedShare(row: (number | null)[]): number {
   }
   return n === 0 ? 0 : r / n;
 }
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "5 Nov" for a 1-based day of year on the 365-day calendar (29 February has no day number). */
+export function doyLabel(doy: number): string {
+  const d = dateOfCell(2021, Math.min(COLS, Math.max(1, doy)) - 1);
+  return `${Number(d.slice(8, 10))} ${MONTH_NAMES[Number(d.slice(5, 7)) - 1]}`;
+}

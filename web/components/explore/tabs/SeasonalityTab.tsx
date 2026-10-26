@@ -2,7 +2,7 @@
 
 import type { EChartsOption } from "echarts";
 import { useMemo, useState } from "react";
-import { dateOfCell } from "@/lib/calendar";
+import { doyLabel } from "@/lib/calendar";
 import { axisStyle, baseOption, useChartColors } from "@/lib/chartTheme";
 import type { Markers, ResultPayload } from "@/lib/types";
 import { useExploreParams } from "@/lib/urlState";
@@ -13,11 +13,6 @@ import { Switch } from "@/components/ui/Field";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_START = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
 const UNIT: Record<string, string> = { frp_sum_mw: "MW", active_1km: "footprints", det_count: "detections" };
-
-const doyLabel = (doy: number) => {
-  const d = dateOfCell(2021, doy - 1);
-  return `${Number(d.slice(8, 10))} ${MONTHS[Number(d.slice(5, 7)) - 1]}`;
-};
 
 /** Latest year with nearly a full year of harmonized data. */
 function latestCompleteYear(cal: NonNullable<ResultPayload["calendar"]>): number {

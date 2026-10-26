@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COLS, cellOfDate, dateOfCell, reconstructedShare, scaleMax, valueColor } from "@/lib/calendar";
+import { COLS, cellOfDate, dateOfCell, doyLabel, reconstructedShare, scaleMax, valueColor } from "@/lib/calendar";
 
 describe("calendar cells", () => {
   it("maps columns to dates, skipping 29 February in leap years", () => {
@@ -48,5 +48,18 @@ describe("colour scale", () => {
     expect(reconstructedShare([1, 1, 0, null])).toBeCloseTo(2 / 3);
     expect(reconstructedShare([null, null])).toBe(0);
     expect(reconstructedShare([0, 0, 0])).toBe(0);
+  });
+});
+
+describe("day-of-year labels", () => {
+  it("names days on the 365-day calendar", () => {
+    expect(doyLabel(1)).toBe("1 Jan");
+    expect(doyLabel(60)).toBe("1 Mar");
+    expect(doyLabel(305)).toBe("1 Nov");
+    expect(doyLabel(365)).toBe("31 Dec");
+  });
+  it("clamps out-of-range input", () => {
+    expect(doyLabel(0)).toBe("1 Jan");
+    expect(doyLabel(999)).toBe("31 Dec");
   });
 });
