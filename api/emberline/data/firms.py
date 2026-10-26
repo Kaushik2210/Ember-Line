@@ -94,6 +94,8 @@ class FirmsClient:
         self._guard_lock = asyncio.Lock()
         self._since_check = 0
         self.requests_made = 0
+        # called with a plain-language message whenever the client pauses for the request budget
+        self.on_wait: Callable[[str], None] | None = None
 
     async def aclose(self) -> None:
         if self._owns_http:
@@ -131,6 +133,8 @@ class FirmsClient:
                 if usage is None or usage[0] < usage[1] - self._reserve:
                     return
                 log.warning("FIRMS budget %d/%d used; pausing %.0fs", *usage, self._rl_wait)
+                if self.on_wait:
+                    self.on_wait("Waiting for NASA's request limit to reset")
                 await self._sleep(self._rl_wait)
 
     async def _get_text(self, url: str, params: dict[str, str] | None = None) -> str:
@@ -161,6 +165,8 @@ class FirmsClient:
                     if rl_waits > self._rl_waits:
                         raise FirmsError("FIRMS transaction budget stayed exhausted")
                     log.warning("FIRMS budget exhausted; waiting %.0fs", self._rl_wait)
+                    if self.on_wait:
+                        self.on_wait("Waiting for NASA's request limit to reset")
                     await self._sleep(self._rl_wait)
                     continue
                 last = self._redact(f"HTTP {resp.status_code}: {body[:120]!r}")

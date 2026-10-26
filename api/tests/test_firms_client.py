@@ -202,3 +202,20 @@ async def test_real_auth_failure_still_raises() -> None:
     async with httpx.AsyncClient() as http:
         with pytest.raises(FirmsAuthError):
             await make(http).area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
+
+
+@respx.mock
+async def test_on_wait_tells_the_caller_when_the_client_pauses() -> None:
+    respx.get(url__regex=r".*mapkey_status.*").mock(
+        side_effect=[
+            httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":4900}'),
+            httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":100}'),
+        ]
+    )
+    respx.get(url__regex=r".*/api/area/.*").mock(return_value=httpx.Response(200, text="a,b"))
+    said: list[str] = []
+    async with httpx.AsyncClient() as http:
+        c = FirmsClient(KEY, http=http, limiter=RateLimiter(100), sleep=_nosleep, guard_every=1)
+        c.on_wait = said.append
+        await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
+    assert said == ["Waiting for NASA's request limit to reset"]
