@@ -57,3 +57,9 @@
   downloads from FIRMS and remembers failures for five minutes.
 - Region defaults are now the full record (2000-11-01 to 2025-12-31), so the reconstruction is what
   people see first.
+
+## Phase 7: visual and accessibility QA
+- Playwright suite (`npm run e2e` in `web/`) at 1440x900 and 390x844: smoke path, screenshots of every page and workspace tab, no-horizontal-overflow checks, axe audit (WCAG 2.1 A/AA) and outage states.
+- Axe findings fixed: contrast of faint text in dark mode, links inside text now underlined, a valid stat list on the landing page, chart save button no longer nested in the image role, a focusable scroll region.
+- Phone fixes: header and nav fit 390 px, grid columns can shrink, map labels clear of the toolbar, icon-only header buttons have names, readable map attribution.
+- Checked on desktop and mobile: 11 screenshot tests, 9 axe tests, 3 outage-state tests, 2 smoke tests.
