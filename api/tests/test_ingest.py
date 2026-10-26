@@ -106,3 +106,28 @@ async def test_max_requests_caps_work(tmp_path: Path) -> None:
             max_requests=2,
         )
     assert area.call_count == 2
+
+
+@respx.mock
+async def test_failed_chunk_does_not_stop_the_run(tmp_path: Path) -> None:
+    respx.get(url__regex=r".*/data_availability/.*").mock(
+        return_value=httpx.Response(200, text=AVAIL)
+    )
+    sample = (FIX / "modis_sp_sample.csv").read_text()
+    respx.get(url__regex=r".*/api/area/csv/.*").mock(
+        side_effect=[httpx.Response(400, text="bad"), httpx.Response(200, text=sample)]
+        + [httpx.Response(200, text=sample)] * 20
+    )
+    cache = ParquetCache(tmp_path)
+    async with httpx.AsyncClient() as http:
+        out = await ingest(
+            client(http),
+            cache,
+            ["MODIS_SP"],
+            BBOX,
+            date(2019, 10, 1),
+            date(2019, 10, 20),
+            concurrency=1,
+        )
+    st = out["MODIS_SP"]
+    assert st.failed == 1 and st.fetched >= 3

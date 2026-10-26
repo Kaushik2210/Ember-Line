@@ -7,15 +7,17 @@ missing. Requested ranges are clipped to what FIRMS reports as available for the
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
 
 from emberline.data.cache import ParquetCache
 from emberline.data.chunking import BBox, clip_chunk, date_chunks, tiles_for
-from emberline.data.firms import Availability, FirmsClient
+from emberline.data.firms import Availability, FirmsAuthError, FirmsClient, FirmsError
 from emberline.data.schema import normalize_firms_csv
 
+log = logging.getLogger(__name__)
 ProgressFn = Callable[[str], None]
 
 
@@ -26,6 +28,7 @@ class IngestStats:
     unavailable: int = 0
     partial: int = 0
     rows: int = 0
+    failed: int = 0
 
     def merge(self, other: IngestStats) -> None:
         self.fetched += other.fetched
@@ -33,6 +36,7 @@ class IngestStats:
         self.unavailable += other.unavailable
         self.partial += other.partial
         self.rows += other.rows
+        self.failed += other.failed
 
 
 async def ingest_source(
@@ -68,7 +72,15 @@ async def ingest_source(
         async with sem:
             if on_progress:
                 on_progress(f"Fetching {source} {clipped.start.isoformat()} tile {tile.key}")
-            text = await client.area_csv(source, tile.bbox, clipped.start, clipped.days)
+            try:
+                text = await client.area_csv(source, tile.bbox, clipped.start, clipped.days)
+            except FirmsAuthError:
+                raise
+            except FirmsError as exc:
+                # leave the chunk uncached so the next run retries it
+                stats.failed += 1
+                log.error("giving up on %s %s: %s", source, clipped.start, exc)
+                return
             df = normalize_firms_csv(text, source)
             # A chunk cut short at the newest available date will grow later: mark it partial.
             if clipped.end < chunk.end:
