@@ -92,3 +92,25 @@ def observed_dates(
         lo, hi = avail[source]
         days = {d for d in days if lo <= d <= hi}
     return sorted(days)
+
+
+def containing_tile(root: Path, source: str, bbox: BBox) -> BBox | None:
+    """The cached tile (as a bbox) that fully contains `bbox` and holds the most chunks, if any.
+
+    Extending an existing tile fills only what is missing, instead of re-downloading a whole new
+    tile for a sub-area that is already mostly on disk."""
+    w, s, e, n = bbox
+    src_dir = Path(root) / "raw" / f"src={source}"
+    if not src_dir.is_dir():
+        return None
+    best: tuple[int, BBox] | None = None
+    for tile_dir in src_dir.glob("tile=*"):
+        tb = _tile_bbox(tile_dir.name)
+        if tb is None:
+            continue
+        tw, ts, te, tn = tb
+        if tw <= w + _EPS and ts <= s + _EPS and te >= e - _EPS and tn >= n - _EPS:
+            count = sum(1 for _ in tile_dir.glob("chunk=*.parquet"))
+            if best is None or count > best[0]:
+                best = (count, tb)
+    return best[1] if best else None
