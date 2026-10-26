@@ -59,6 +59,8 @@ class Analysis:
     synthetic: bool
     counts: dict[str, int]
     daily: pl.DataFrame  # local_date, modis, viirs (null = not observed)
+    ds: pl.DataFrame  # region daily totals per sensor and day/night, all metrics
+    observed: dict[str, list[date]] | None  # downloaded days per sensor (None: synthetic)
     norm: NormalizationResult | None = None
     harmonized: pl.DataFrame | None = None
     climatology: pl.DataFrame | None = None
@@ -198,7 +200,7 @@ def run_analysis(
             observed[sensor] = sorted(d for d in days if start <= d <= end)
     daily = calendar_series(ds, metric, start, end, observed=observed)
 
-    a = Analysis(bbox, start, end, policy, grid, metric, synthetic, counts, daily)
+    a = Analysis(bbox, start, end, policy, grid, metric, synthetic, counts, daily, ds, observed)
     a.notes += _data_notes(q, daily, counts, synthetic)
 
     a.overpass, a.frp_ratio, a.overpass_tables = _overpass_by_year(q, say)

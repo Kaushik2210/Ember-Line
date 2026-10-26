@@ -110,3 +110,23 @@ def test_short_record_degrades_gracefully(tmp_path: Path) -> None:
     )
     assert a.norm is None and a.harmonized is None
     assert any("Normalisation not fitted" in n for n in a.notes)
+
+
+def test_report_renders_every_section_from_computed_numbers(analysis, store) -> None:  # type: ignore[no-untyped-def]
+    from emberline.report import report
+
+    text = report(analysis, "Test region", store.coverage(synthetic=True))
+    for heading in (
+        "SYNTHETIC DATA",
+        "## 1. The sensors disagree",
+        "## 2. Coincident overpasses",
+        "## 3. Normalisation",
+        "## 4. Harmonised record",
+        "## 5. Seasonality",
+        "## 6. Most unusual seasons",
+        "## Notes",
+    ):
+        assert heading in text, heading
+    assert analysis.norm.chosen in text
+    assert "VIIRS / MODIS over all overlap weeks" in text
+    assert "nan" not in text.lower().replace("nominal", "")
