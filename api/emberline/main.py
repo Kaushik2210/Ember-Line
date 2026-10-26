@@ -24,7 +24,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.web_origin],  # locked to the web app, no wildcard
+        allow_origins=settings.web_origins,  # locked to the web app, no wildcard
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )

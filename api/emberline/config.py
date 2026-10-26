@@ -17,7 +17,12 @@ class Settings(BaseSettings):
 
     firms_map_key: str = ""
     data_dir: Path = API_DIR / "data"
+    # one origin, or several separated by commas (production and preview deployments)
     web_origin: str = "http://localhost:3000"
+
+    @property
+    def web_origins(self) -> list[str]:
+        return [o.strip().rstrip("/") for o in self.web_origin.split(",") if o.strip()]
 
     @field_validator("data_dir")
     @classmethod
