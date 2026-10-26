@@ -22,8 +22,10 @@ function Ready({ e }: { e: ShowcaseEntry }) {
         )}
         {f.overlap.ratio != null && (
           <li>
-            <span className="text-ink">VIIRS records {f.overlap.ratio >= 1 ? `${f.overlap.ratio.toFixed(1)}×` : `${(1 / f.overlap.ratio).toFixed(1)}× less`}</span>{" "}
-            {f.overlap.ratio >= 1 ? "the" : "than"} fire radiative power {f.overlap.ratio >= 1 ? "that MODIS does" : "MODIS does"} on the same days.
+            <span className="text-ink">
+              VIIRS records {f.overlap.ratio >= 1 ? `${f.overlap.ratio.toFixed(1)}× the` : `${(1 / f.overlap.ratio).toFixed(1)}× less`}
+            </span>{" "}
+            fire radiative power {f.overlap.ratio >= 1 ? "that MODIS does" : "than MODIS does"} on the same days.
           </li>
         )}
         {f.overpass?.modis_seen_by_viirs != null && f.overpass.viirs_seen_by_modis != null && (
