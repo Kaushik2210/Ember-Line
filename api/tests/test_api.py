@@ -53,7 +53,7 @@ def test_health_regions_availability(client: TestClient) -> None:
     h = client.get("/api/health").json()
     assert h["status"] == "ok" and h["firms_key_configured"] is False
     regions = client.get("/api/regions").json()
-    assert len(regions) == 6 and {"id", "name", "bbox", "blurb"} <= set(regions[0])
+    assert len(regions) == 8 and {"id", "name", "bbox", "blurb"} <= set(regions[0])
     assert "sources" in client.get("/api/availability").json()
 
 

@@ -4,7 +4,7 @@ import { PageShell } from "@/components/site/SiteShell";
 
 export const metadata: Metadata = {
   title: "Atlas · EMBERLINE",
-  description: "Six places where MODIS and VIIRS tell different stories about fire, with findings computed from the record.",
+  description: "Eight places where MODIS and VIIRS tell different stories about fire, with findings computed from the record.",
 };
 
 export default function AtlasPage() {

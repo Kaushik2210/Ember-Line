@@ -12,7 +12,7 @@ decades. Built for NASA Space Apps 2026, challenge "Harmonization of MODIS and V
 
 What you can do in the workspace:
 
-- pick a region (six curated stories), draw a box or upload a GeoJSON, and choose a period;
+- pick a region (eight curated stories), draw a box or upload a GeoJSON, and choose a period;
 - slide between what MODIS saw and what VIIRS saw on the same day, over NASA GIBS imagery;
 - read a daily calendar of burning activity in raw MODIS, raw VIIRS or harmonized (VIIRS-equivalent)
   units, with uncertainty bands;
@@ -77,7 +77,7 @@ The atlas and landing page show real numbers only for regions whose NASA data is
 ```bash
 cd api
 uv run python ../scripts/prefetch.py --dry-run     # how many requests a run needs
-uv run python ../scripts/prefetch.py               # all six regions, resumable, in the background
+uv run python ../scripts/prefetch.py               # all eight regions, resumable, in the background
 uv run python ../scripts/prefetch.py --regions punjab-haryana --start 2019-10-01 --end 2019-11-30
 uv run python ../scripts/make_synthetic.py         # SYNTHETIC data for dev and tests only
 ```

@@ -134,7 +134,7 @@ export function Landing() {
       <section className="border-t border-line bg-panel">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-10 sm:px-6">
           <div>
-            <h2 className="text-lg font-semibold">Six places where the sensors tell different stories</h2>
+            <h2 className="text-lg font-semibold">Eight places where the sensors tell different stories</h2>
             <p className="mt-1 max-w-xl text-sm text-muted">From crop-residue burning in Punjab to the Australian Black Summer and the 2023 Canadian season, each with what the data show.</p>
           </div>
           <Link href="/atlas" className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-5 text-sm font-medium hover:border-[var(--border-strong)]">

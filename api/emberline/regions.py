@@ -72,6 +72,28 @@ REGIONS: list[Region] = [
         default_start="2000-11-01",
         default_end="2025-12-31",
     ),
+    Region(
+        id="indonesia-peatlands",
+        name="Sumatra & Kalimantan, Indonesia",
+        bbox=(102.0, -4.5, 116.5, 1.5),
+        blurb=(
+            "Peatland and plantation fires that surge in dry El Nino years, so the record is shaped "
+            "by a few extreme seasons."
+        ),
+        default_start="2000-11-01",
+        default_end="2025-12-31",
+    ),
+    Region(
+        id="greece",
+        name="Greece",
+        bbox=(19.3, 34.7, 28.3, 41.8),
+        blurb=(
+            "Short, intense summer fires on a fragmented landscape, where VIIRS's finer pixels "
+            "tend to matter most."
+        ),
+        default_start="2000-11-01",
+        default_end="2025-12-31",
+    ),
 ]
 
 

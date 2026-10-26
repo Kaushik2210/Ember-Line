@@ -100,7 +100,7 @@ def test_regions_without_data_are_unavailable_with_a_reason_and_nothing_is_downl
     }
     assert all(r["reason"] for r in others)
     assert all(r["findings"] is None for r in others)
-    assert len(rows) == 6
+    assert len(rows) == len(REGIONS)
 
 
 def test_listing_has_the_preset_details(client: TestClient) -> None:
