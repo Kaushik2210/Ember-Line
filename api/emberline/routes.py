@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import time
 from collections.abc import AsyncIterator
 from datetime import date
 from typing import Any
@@ -14,13 +15,15 @@ from sse_starlette.sse import EventSourceResponse
 
 from emberline import __version__
 from emberline.data.coverage import load_availability
+from emberline.findings import findings
 from emberline.guardrails import GuardrailError, check_bbox
 from emberline.hotspots import hotspots_geojson
-from emberline.jobs import JobManager
+from emberline.jobs import JobManager, request_key
 from emberline.regions import REGIONS
 from emberline.schemas import AnalyzeRequest, JobStatus
 
 router = APIRouter(prefix="/api")
+RETRY_AFTER_S = 300.0  # how long a failed showcase analysis is remembered before trying again
 
 
 def _jobs(request: Request) -> JobManager:
@@ -55,6 +58,56 @@ def availability(request: Request) -> dict[str, Any]:
 @router.get("/regions")
 def regions() -> list[dict[str, Any]]:
     return [r.model_dump() for r in REGIONS]
+
+
+@router.get("/showcase")
+async def showcase(request: Request) -> list[dict[str, Any]]:
+    """Headline findings per preset region, computed from each region's default analysis.
+
+    Never downloads from FIRMS: a region whose data is not on disk is reported as unavailable, with
+    the reason. A region still being computed is reported as computing, so callers can poll."""
+    jobs = _jobs(request)
+    cache: dict[str, dict[str, Any]] = request.app.state.findings
+    out = []
+    for r in REGIONS:
+        entry: dict[str, Any] = {
+            "id": r.id,
+            "name": r.name,
+            "bbox": r.bbox,
+            "blurb": r.blurb,
+            "start": r.default_start,
+            "end": r.default_end,
+            "state": "unavailable",
+            "job_id": None,
+            "findings": None,
+            "reason": None,
+        }
+        req = AnalyzeRequest(
+            region_id=r.id,
+            start=date.fromisoformat(r.default_start),
+            end=date.fromisoformat(r.default_end),
+        )
+        try:
+            job = jobs.get(request_key(req))
+            # a failed region is remembered for a few minutes; retrying on every poll would hide the
+            # failure behind a permanent "computing" and redo the work
+            if job is None or (job.status == "error" and time.time() - job.created > RETRY_AFTER_S):
+                job = jobs.submit(req, allow_fetch=False)
+        except GuardrailError as exc:
+            entry["reason"] = str(exc)
+            out.append(entry)
+            continue
+        entry["job_id"] = job.id
+        if job.status == "done" and job.result is not None:
+            if job.id not in cache:
+                cache[job.id] = findings(job.result)
+            entry["state"], entry["findings"] = "ready", cache[job.id]
+        elif job.status == "error":
+            entry["reason"] = job.error
+        else:
+            entry["state"] = "computing"
+        out.append(entry)
+    return out
 
 
 @router.post("/analyze", status_code=202, response_model=JobStatus)

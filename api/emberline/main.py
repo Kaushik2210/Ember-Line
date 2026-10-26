@@ -34,6 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     key = settings.firms_map_key
     factory = (lambda: FirmsClient(key, guard_every=8)) if key else None
     app.state.jobs = JobManager(store, settings.data_dir / "results", firms_factory=factory)
+    app.state.findings = {}  # job id -> headline findings, so they are computed once
     app.include_router(router)
     return app
 
