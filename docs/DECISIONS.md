@@ -60,3 +60,24 @@
   built from at least 365 distinct days.
 - **Normalisation works on weekly totals, in log1p space,** and is applied to daily data by spreading
   the mapped weekly total over days in proportion to MODIS's own daily pattern.
+- **Terra-only years get their own model.** Before Aqua (NASA: high quality fire data from Aqua
+  start 4 July 2002) MODIS fire data come from Terra alone. On Punjab/Haryana the first run read 2001-02
+  as "4.8 robust SD below normal" purely because one satellite sees about a third of the detections.
+  Raw Terra against VIIRS has R2 0.15 and -89% bias; a Terra-only quantile-mapping model calibrated on
+  Terra's own overlap with VIIRS has cross-validated R2 0.83. Weeks before the Aqua date use it, and
+  events there carry an explicit "less reliable" caveat.
+- **Fire seasons are reported per burning season.** Punjab/Haryana burns twice a year (Oct-Nov about 70%
+  of seasonal activity, Apr-May about 30%); a single start/peak/end spanning both ("209 days") was
+  meaningless, so each season gets its own markers.
+- **Immaterial events are dropped.** An event must depart from its baseline by at least 1% of a typical
+  year's total. Otherwise a handful of detections in an empty season scores a huge z.
+- **A single scale factor is reported as a baseline, and the report says when it matches the chosen
+  model.** On Punjab/Haryana weekly FRP, one multiplicative factor (log error 0.645) is as good as the
+  best fitted model (0.649). Intervals are wide (about x5.5 at 90%) because weekly totals from the two
+  sensors disagree by more than a constant factor. Both facts are surfaced, not hidden.
+- **Normalisation target.** Models work on weekly totals; daily values keep MODIS's within-week shape.
+- **June 2009 in Punjab/Haryana** shows up as a +9.5 SD event. It is real: the detections cluster at
+  30.6-31.3N, 77.1-77.3E in the Himalayan foothills (about one detection a day normally, tens in that
+  week), which is forest burning, not cropland.
+- **Matching is Aqua-MODIS vs SNPP-VIIRS only.** Terra (10:30) and the NOAA satellites are not used for
+  the coincident-overpass validation.
