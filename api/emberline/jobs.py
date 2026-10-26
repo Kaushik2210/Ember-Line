@@ -130,7 +130,9 @@ class JobManager:
             self.jobs[job_id] = job
         return job
 
-    def submit(self, req: AnalyzeRequest) -> Job:
+    def submit(self, req: AnalyzeRequest, allow_fetch: bool = True) -> Job:
+        """Start (or find) the analysis. `allow_fetch=False` never downloads from FIRMS, which is
+        what page views such as the landing page use so they cannot spend the request budget."""
         bbox, rings = resolve_area(req)
         check_bbox(bbox)
         check_period(req.start, req.end)
@@ -142,7 +144,7 @@ class JobManager:
         job = Job(key)
         self.jobs[key] = job
         self._trim()
-        task = asyncio.create_task(self._run(job, req, bbox, rings))
+        task = asyncio.create_task(self._run(job, req, bbox, rings, allow_fetch))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
         return job
@@ -155,7 +157,9 @@ class JobManager:
                 if self.jobs[k].status in ("done", "error"):
                     del self.jobs[k]
 
-    async def _run(self, job: Job, req: AnalyzeRequest, bbox: Any, rings: Any) -> None:
+    async def _run(
+        self, job: Job, req: AnalyzeRequest, bbox: Any, rings: Any, allow_fetch: bool = True
+    ) -> None:
         loop = asyncio.get_running_loop()
 
         def progress(stage: str) -> None:  # called from the worker thread
@@ -166,7 +170,7 @@ class JobManager:
             await job.emit("Starting analysis")
             try:
                 if not req.synthetic:
-                    await self._ensure_data(job, bbox, req)
+                    await self._ensure_data(job, bbox, req, allow_fetch)
                 analysis = await asyncio.to_thread(
                     run_analysis,
                     self.store,
@@ -190,13 +194,15 @@ class JobManager:
                 log.exception("analysis %s failed", job.id)
                 await job.finish("error", "The analysis failed unexpectedly. Please try again.")
 
-    async def _ensure_data(self, job: Job, bbox: Any, req: AnalyzeRequest) -> None:
+    async def _ensure_data(
+        self, job: Job, bbox: Any, req: AnalyzeRequest, allow_fetch: bool = True
+    ) -> None:
         """Download what is missing for this region and period, within hard request limits.
 
         What is missing is judged from the days actually on disk, so a box inside a cached preset
         needs nothing. A new area is fetched on a half-degree-snapped box so nearby boxes share it."""
         root = self.store.root
-        client = self._factory() if self._factory else None
+        client = self._factory() if (self._factory and allow_fetch) else None
         try:
             if client is not None:
                 live = await client.availability()
