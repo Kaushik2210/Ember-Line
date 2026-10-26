@@ -63,3 +63,8 @@
 - Axe findings fixed: contrast of faint text in dark mode, links inside text now underlined, a valid stat list on the landing page, chart save button no longer nested in the image role, a focusable scroll region.
 - Phone fixes: header and nav fit 390 px, grid columns can shrink, map labels clear of the toolbar, icon-only header buttons have names, readable map attribution.
 - Checked on desktop and mobile: 11 screenshot tests, 9 axe tests, 3 outage-state tests, 2 smoke tests.
+
+## Phase 8: submission kit
+- README rewritten: architecture diagram, quickstart, keys, data and prefetch, limitations, acknowledgment.
+- `docs/PITCH.md`: 2-minute script, 5-slide outline, objective-to-feature table, likely questions.
+- `docs/DEMO.md`: pre-demo checklist, 90-second golden path, what to do when something fails.
