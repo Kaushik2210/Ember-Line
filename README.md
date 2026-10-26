@@ -1,4 +1,4 @@
-﻿# EMBERLINE
+# EMBERLINE
 
 One consistent record of fire, from two sensors.
 
