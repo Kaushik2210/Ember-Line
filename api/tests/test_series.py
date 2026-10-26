@@ -100,3 +100,13 @@ def test_weekly_pairs_drops_incomplete_overlap() -> None:
 def test_sensor_periods() -> None:
     d = ds([("modis", date(2020, 1, 1), "D", 1.0), ("modis", date(2020, 3, 1), "D", 1.0)])
     assert sensor_periods(d) == {"modis": (date(2020, 1, 1), date(2020, 3, 1))}
+
+
+def test_observed_days_make_failed_chunks_gaps_not_zeros() -> None:
+    d = ds([("modis", date(2020, 1, 1), "D", 5.0), ("modis", date(2020, 1, 10), "D", 7.0)])
+    seen = [date(2020, 1, i) for i in (1, 2, 3, 9, 10)]  # 4..8 never downloaded
+    cs = calendar_series(d, "frp_sum_mw", observed={"modis": seen})
+    m = dict(zip(cs["local_date"], cs["modis"], strict=True))
+    assert m[date(2020, 1, 2)] == 0.0  # downloaded, nothing detected
+    assert m[date(2020, 1, 5)] is None  # not downloaded
+    assert m[date(2020, 1, 10)] == 7.0

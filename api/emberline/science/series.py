@@ -28,11 +28,14 @@ def calendar_series(
     end: date | None = None,
     daynight: str | None = None,
     periods: dict[str, tuple[date, date]] | None = None,
+    observed: dict[str, list[date]] | None = None,
 ) -> pl.DataFrame:
     """Daily values per sensor, columns: local_date, modis, viirs (null where not observed).
 
     `daynight` None sums day and night. `periods` overrides each sensor's observed period
     (e.g. the availability range reported by FIRMS) when the loaded record is shorter.
+    `observed` lists, per sensor, the exact days that were downloaded (see data.coverage); a day
+    outside it is null even inside the sensor's period, so a failed download is a gap, not zeros.
     """
     if metric not in METRICS:
         raise ValueError(f"unknown metric {metric}")
@@ -41,6 +44,11 @@ def calendar_series(
             schema={"local_date": pl.Date, "modis": pl.Float64, "viirs": pl.Float64}
         )
     periods = periods or sensor_periods(ds)
+    if observed:
+        periods = {
+            **periods,
+            **{k: (min(v), max(v)) for k, v in observed.items() if v},
+        }
     src = ds if daynight is None else ds.filter(pl.col("daynight") == daynight)
     lo = start or min(p[0] for p in periods.values())
     hi = end or max(p[1] for p in periods.values())
@@ -53,7 +61,15 @@ def calendar_series(
             .agg(pl.col(metric).sum().cast(pl.Float64).alias(sensor))
         )
         out = out.join(vals, on="local_date", how="left")
-        if sensor in periods:
+        if observed is not None and sensor in observed:
+            seen = pl.Series(observed[sensor], dtype=pl.Date)
+            out = out.with_columns(
+                pl.when(pl.col("local_date").is_in(seen.implode()))
+                .then(pl.col(sensor).fill_null(0.0))
+                .otherwise(None)
+                .alias(sensor)
+            )
+        elif sensor in periods:
             plo, phi = periods[sensor]
             out = out.with_columns(
                 pl.when(pl.col("local_date").is_between(plo, phi))
