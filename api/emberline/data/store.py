@@ -12,11 +12,18 @@ from pathlib import Path
 
 import duckdb
 import polars as pl
+import pyarrow as pa
 
 from emberline.data.schema import COMMON_SCHEMA, empty_frame
 
 BBox = tuple[float, float, float, float]
 _COLS = ", ".join(COMMON_SCHEMA)
+
+
+def _to_polars(table: pa.Table) -> pl.DataFrame:
+    df = pl.from_arrow(table)
+    assert isinstance(df, pl.DataFrame)
+    return df
 
 
 class HotspotStore:
@@ -56,8 +63,8 @@ class HotspotStore:
             params += list(sources)
         sql += " ORDER BY acq_utc, latitude, longitude"
         with duckdb.connect(":memory:") as con:
-            out = pl.from_arrow(con.sql(sql, params=params).to_arrow_table())
-        return out.cast(COMMON_SCHEMA)  # type: ignore[arg-type]
+            out = _to_polars(con.sql(sql, params=params).to_arrow_table())
+        return out.cast(COMMON_SCHEMA)
 
     def coverage(self, synthetic: bool = False) -> pl.DataFrame:
         """Per-source min/max local date and de-duplicated row count held on disk."""
@@ -71,7 +78,7 @@ class HotspotStore:
                 }
             )
         with duckdb.connect(":memory:") as con:
-            return pl.from_arrow(
+            return _to_polars(
                 con.sql(
                     f"""SELECT source, min(local_date) AS min_date, max(local_date) AS max_date,
                           count(*)::BIGINT AS rows

@@ -9,6 +9,7 @@ Both are mapped to one table. FRP is the most directly comparable attribute.
 from __future__ import annotations
 
 import io
+from typing import Any
 
 import polars as pl
 
@@ -23,7 +24,7 @@ VIIRS_PLATFORM_BY_SOURCE = {
 }
 ALL_SOURCES = sorted(MODIS_SOURCES | set(VIIRS_PLATFORM_BY_SOURCE))
 
-COMMON_SCHEMA: dict[str, pl.DataType] = {
+_FIELDS: dict[str, Any] = {
     "source": pl.Utf8,
     "sensor": pl.Utf8,
     "platform": pl.Utf8,
@@ -43,6 +44,7 @@ COMMON_SCHEMA: dict[str, pl.DataType] = {
     "fire_type": pl.Int64,
     "synthetic": pl.Boolean,
 }
+COMMON_SCHEMA = pl.Schema(_FIELDS)
 
 
 def sensor_of(source: str) -> str:
@@ -121,4 +123,4 @@ def normalize_firms_csv(text: str, source: str) -> pl.DataFrame:
             pl.lit(0.0).alias("local_solar_hour"), pl.lit(None, dtype=pl.Date).alias("local_date")
         )
     )
-    return df.select(list(COMMON_SCHEMA)).cast(COMMON_SCHEMA)  # type: ignore[arg-type]
+    return df.select(list(COMMON_SCHEMA)).cast(COMMON_SCHEMA)

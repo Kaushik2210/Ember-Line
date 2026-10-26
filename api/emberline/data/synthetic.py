@@ -45,7 +45,7 @@ MODELS = [
 def _diurnal(hour: np.ndarray) -> np.ndarray:
     """Relative fire activity by local hour: peak ~15:00, small night floor."""
     d = np.minimum(np.abs(hour - 15.0), 24 - np.abs(hour - 15.0))
-    return 0.08 + 0.92 * np.exp(-0.5 * (d / 3.5) ** 2)
+    return np.asarray(0.08 + 0.92 * np.exp(-0.5 * (d / 3.5) ** 2))
 
 
 def generate_synthetic(bbox: BBox, start: date, end: date, seed: int = 0) -> pl.DataFrame:
@@ -140,7 +140,7 @@ def generate_synthetic(bbox: BBox, start: date, end: date, seed: int = 0) -> pl.
         pl.lit(0.0).alias("local_solar_hour"), pl.lit(None, dtype=pl.Date).alias("local_date")
     )
     df = add_time_columns(df)
-    return df.select(list(COMMON_SCHEMA)).cast(COMMON_SCHEMA).sort("acq_utc")  # type: ignore[arg-type]
+    return df.select(list(COMMON_SCHEMA)).cast(COMMON_SCHEMA).sort("acq_utc")
 
 
 def write_synthetic(root: Path, df: pl.DataFrame) -> list[Path]:
