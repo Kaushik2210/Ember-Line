@@ -2,6 +2,10 @@
 
 The MAP_KEY is part of the URL path, so every error message is redacted before it can
 reach logs or API responses. Rate limiting and exponential backoff are built in.
+
+Budget: FIRMS allows a fixed number of transactions per 10-minute window and bills by an
+internal formula we do not rely on. With `guard_every` set, the client polls the key-status
+endpoint and pauses before the budget runs out, so long downloads wait instead of failing.
 """
 
 from __future__ import annotations
@@ -9,8 +13,8 @@ from __future__ import annotations
 import asyncio
 import csv
 import io
+import json
 import logging
-import math
 import random
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -29,16 +33,20 @@ for _name in ("httpx", "httpcore"):
 
 BASE = "https://firms.modaps.eosdis.nasa.gov"
 STATUS_URL = f"{BASE}/mapserver/mapkey_status/"
-# FIRMS reports some failures as HTTP 200 with a plain-text body.
+# FIRMS reports some failures as HTTP 200 with a plain-text body, others as HTTP 400.
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+_BUDGET_MARKERS = ("exceeded your transaction", "Exceeding allowed transaction")
+
+BBox = tuple[float, float, float, float]
+
+
+def _is_budget_body(body: str) -> bool:
+    head = body[:200]
+    return any(m in head for m in _BUDGET_MARKERS)
 
 
 def _is_error_body(body: str) -> bool:
-    head = body[:200]
-    return head.startswith(("Invalid", "MAP_KEY is invalid")) or "exceeded your transaction" in head
-
-
-BBox = tuple[float, float, float, float]
+    return body[:200].startswith(("Invalid", "MAP_KEY is invalid")) or _is_budget_body(body)
 
 
 class FirmsError(RuntimeError):
@@ -63,10 +71,12 @@ class FirmsClient:
         http: httpx.AsyncClient | None = None,
         limiter: RateLimiter | None = None,
         max_retries: int = 5,
-        rate_limit_wait_s: float = 60.0,
-        max_rate_limit_waits: int = 15,
+        rate_limit_wait_s: float = 30.0,
+        max_rate_limit_waits: int = 40,
         base_delay_s: float = 2.0,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        guard_every: int | None = None,
+        budget_reserve: int = 400,
     ) -> None:
         if not map_key:
             raise FirmsAuthError("FIRMS_MAP_KEY is not set")
@@ -79,6 +89,10 @@ class FirmsClient:
         self._rl_waits = max_rate_limit_waits
         self._base_delay = base_delay_s
         self._sleep = sleep
+        self._guard_every = guard_every
+        self._reserve = budget_reserve
+        self._guard_lock = asyncio.Lock()
+        self._since_check = 0
         self.requests_made = 0
 
     async def aclose(self) -> None:
@@ -93,6 +107,31 @@ class FirmsClient:
 
     def _redact(self, text: str) -> str:
         return text.replace(self._key, "***")
+
+    async def _usage(self) -> tuple[int, int] | None:
+        """(used, limit) from the key-status endpoint, or None if it cannot be read."""
+        try:
+            resp = await self._http.get(STATUS_URL, params={"MAP_KEY": self._key})
+            data = json.loads(resp.text)
+            return int(data["current_transactions"]), int(data["transaction_limit"])
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return None
+
+    async def _guard(self) -> None:
+        """Pause while the key is close to its 10-minute budget."""
+        if self._guard_every is None:
+            return
+        async with self._guard_lock:
+            self._since_check += 1
+            if self._since_check < self._guard_every:
+                return
+            self._since_check = 0
+            for _ in range(self._rl_waits):
+                usage = await self._usage()
+                if usage is None or usage[0] < usage[1] - self._reserve:
+                    return
+                log.warning("FIRMS budget %d/%d used; pausing %.0fs", *usage, self._rl_wait)
+                await self._sleep(self._rl_wait)
 
     async def _get_text(self, url: str, params: dict[str, str] | None = None) -> str:
         last: str = ""
@@ -109,10 +148,15 @@ class FirmsClient:
                 body = resp.text
                 if resp.status_code == 200 and not _is_error_body(body):
                     return body
-                if body.startswith("Invalid MAP_KEY"):
-                    raise FirmsAuthError("FIRMS rejected the MAP_KEY")
-                if "exceeded your transaction" in body[:200]:
-                    # budget exhausted: wait for the 10-minute window instead of burning retries
+                exhausted = _is_budget_body(body)
+                if body.startswith("Invalid MAP_KEY") and not exhausted:
+                    # FIRMS also answers this when the budget is spent, so check the status
+                    usage = await self._usage()
+                    if usage is not None and usage[0] >= usage[1]:
+                        exhausted = True
+                    else:
+                        raise FirmsAuthError("FIRMS rejected the MAP_KEY")
+                if exhausted:
                     rl_waits += 1
                     if rl_waits > self._rl_waits:
                         raise FirmsError("FIRMS transaction budget stayed exhausted")
@@ -142,17 +186,16 @@ class FirmsClient:
 
     async def key_status(self) -> dict[str, object]:
         """Transaction budget for this key (limit, used, interval)."""
-        import json
-
         text = await self._get_text(STATUS_URL, params={"MAP_KEY": self._key})
         return json.loads(text)  # type: ignore[no-any-return]
 
     async def area_csv(self, source: str, bbox: BBox, start: date, days: int) -> str:
         if not 1 <= days <= MAX_DAY_RANGE:
             raise ValueError(f"FIRMS day range must be 1-{MAX_DAY_RANGE}")
+        await self._guard()
         w, s, e, n = bbox
-        url = f"{BASE}/api/area/csv/{self._key}/{source}/{w:g},{s:g},{e:g},{n:g}/{days}/{start.isoformat()}"
-        text = await self._get_text(url)
-        # FIRMS bills about one transaction per 1000 rows; the call itself already cost one
-        self._limiter.charge(max(0, math.ceil(text.count(chr(10)) / 1000) - 1))
-        return text
+        url = (
+            f"{BASE}/api/area/csv/{self._key}/{source}/"
+            f"{w:g},{s:g},{e:g},{n:g}/{days}/{start.isoformat()}"
+        )
+        return await self._get_text(url)

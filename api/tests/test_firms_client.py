@@ -75,7 +75,10 @@ async def test_text_rate_limit_message_is_retried() -> None:
 
 @respx.mock
 async def test_invalid_key_is_not_retried() -> None:
-    route = respx.get(url__regex=r".*").mock(
+    respx.get(url__regex=r".*mapkey_status.*").mock(
+        return_value=httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":1}')
+    )
+    route = respx.get(url__regex=r".*/api/area/.*").mock(
         return_value=httpx.Response(200, text="Invalid MAP_KEY.")
     )
     async with httpx.AsyncClient() as http:
@@ -124,7 +127,7 @@ async def test_budget_exhausted_waits_instead_of_failing() -> None:
     async with httpx.AsyncClient() as http:
         c = FirmsClient(KEY, http=http, limiter=RateLimiter(100), sleep=rec, max_retries=1)
         assert await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1) == "a,b"
-    assert waits == [60.0, 60.0, 60.0]
+    assert waits == [30.0, 30.0, 30.0]
 
 
 @respx.mock
@@ -140,11 +143,62 @@ async def test_budget_stays_exhausted_gives_up() -> None:
 
 
 @respx.mock
-async def test_big_response_charges_the_limiter() -> None:
-    body = "h\n" + "r\n" * 3500
-    respx.get(url__regex=r".*").mock(return_value=httpx.Response(200, text=body))
-    lim = RateLimiter(100)
+async def test_invalid_key_while_budget_spent_waits_not_fails() -> None:
+    respx.get(url__regex=r".*mapkey_status.*").mock(
+        side_effect=[
+            httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":5000}'),
+        ]
+    )
+    respx.get(url__regex=r".*/api/area/.*").mock(
+        side_effect=[httpx.Response(200, text="Invalid MAP_KEY."), httpx.Response(200, text="a,b")]
+    )
     async with httpx.AsyncClient() as http:
-        c = FirmsClient(KEY, http=http, limiter=lim, sleep=_nosleep)
+        c = make(http)
+        assert await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1) == "a,b"
+
+
+@respx.mock
+async def test_http_400_transaction_limit_message_is_treated_as_budget() -> None:
+    respx.get(url__regex=r".*").mock(
+        side_effect=[
+            httpx.Response(400, text="Exceeding allowed transaction limit."),
+            httpx.Response(200, text="a,b"),
+        ]
+    )
+    async with httpx.AsyncClient() as http:
+        assert await make(http).area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1) == "a,b"
+
+
+@respx.mock
+async def test_guard_pauses_when_budget_nearly_spent() -> None:
+    status = respx.get(url__regex=r".*mapkey_status.*").mock(
+        side_effect=[
+            httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":4900}'),
+            httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":120}'),
+        ]
+    )
+    respx.get(url__regex=r".*/api/area/.*").mock(return_value=httpx.Response(200, text="a,b"))
+    waits: list[float] = []
+
+    async def rec(s: float) -> None:
+        waits.append(s)
+
+    async with httpx.AsyncClient() as http:
+        c = FirmsClient(
+            KEY, http=http, limiter=RateLimiter(100), sleep=rec, guard_every=1, budget_reserve=400
+        )
         await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
-    assert lim.in_window == 4  # 1 for the call + 3 extra for ~3.5k rows
+    assert status.call_count == 2 and waits == [30.0]
+
+
+@respx.mock
+async def test_real_auth_failure_still_raises() -> None:
+    respx.get(url__regex=r".*mapkey_status.*").mock(
+        return_value=httpx.Response(200, text='{"transaction_limit":5000,"current_transactions":3}')
+    )
+    respx.get(url__regex=r".*/api/area/.*").mock(
+        return_value=httpx.Response(200, text="Invalid MAP_KEY.")
+    )
+    async with httpx.AsyncClient() as http:
+        with pytest.raises(FirmsAuthError):
+            await make(http).area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
