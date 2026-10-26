@@ -27,7 +27,7 @@ REGIONS: list[Region] = [
         bbox=(73.8, 28.4, 77.6, 32.5),
         blurb=(
             "Crop-residue burning peaks in October and November, mostly as many small fires. "
-            "The early-afternoon overpass can miss the evening burning peak, so the sensors diverge."
+            "The early-afternoon overpass can miss the evening burn peak, so the sensors diverge."
         ),
         default_start="2012-06-01",
         default_end="2024-12-31",
