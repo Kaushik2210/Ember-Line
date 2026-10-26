@@ -2,6 +2,10 @@
 
 **One consistent record of fire, from two sensors.**
 
+[![CI](https://github.com/Kaushik2210/Ember-Line/actions/workflows/ci.yml/badge.svg)](https://github.com/Kaushik2210/Ember-Line/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live site](https://img.shields.io/badge/live-emberline--zeta.vercel.app-black)](https://emberline-zeta.vercel.app)
+
 EMBERLINE harmonizes NASA's MODIS (1 km) and VIIRS (375 m) active-fire records into one
 uncertainty-aware calendar of burning activity, so fire seasons can be compared across sensors and
 decades. Built for NASA Space Apps 2026, challenge "Harmonization of MODIS and VIIRS Hot Spots".
@@ -84,6 +88,17 @@ when the budget runs low and can be stopped and resumed. Data lives in `data/` (
 data is always labelled and is never shown as real. FIRMS behaviour measured while building this is
 in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
+## Deploying
+
+- **Web (Vercel).** Project `emberline`, root directory `web`, connected to this repository, so every push
+  to `main` deploys. Set `NEXT_PUBLIC_API_URL` to the API's public URL and redeploy; without it the site
+  loads and says plainly that the data service is not reachable.
+- **API (any Docker host with a disk).** [`render.yaml`](render.yaml) is a Render blueprint: it builds
+  `api/Dockerfile`, mounts a disk at `/data`, and expects `FIRMS_MAP_KEY` (secret) and `WEB_ORIGIN` (the
+  Vercel URL, comma-separated for several) in the dashboard. The disk needs the downloaded data (`data/`
+  from the prefetch, about 0.4 GB for two regions); the API cannot run on Vercel's serverless functions
+  because of that data and long-running jobs.
+
 ## Limitations
 
 - **Coverage:** harmonization needs at least a year and several VIIRS-era years to fit; the VIIRS 375 m
@@ -120,4 +135,4 @@ Data and Information System (ESDIS). EMBERLINE is not affiliated with or endorse
 
 ## License and team
 
-Not yet chosen: add a `LICENSE` file and team names before publishing.
+MIT, see [`LICENSE`](LICENSE). Team names are still to be added. Contributions: [`CONTRIBUTING.md`](CONTRIBUTING.md).
