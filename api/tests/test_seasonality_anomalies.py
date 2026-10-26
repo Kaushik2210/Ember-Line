@@ -16,6 +16,7 @@ from emberline.science.seasonality import (
     climatology,
     doy_matrix,
     season_markers,
+    season_segments,
     stl_decompose,
 )
 
@@ -166,3 +167,39 @@ def test_season_labels_follow_the_peak_or_straddle_new_year() -> None:
     v = 50 * np.exp(-0.5 * (dist / 25.0) ** 2) + 0.01
     south = season_totals(pl.DataFrame({"local_date": days, "harmonized": v}))
     assert south.height > 0 and all("-" in s for s in south["season"])
+
+
+def test_two_burning_seasons_are_separated() -> None:
+    doy = np.arange(365)
+    bump = lambda c, w, h: h * np.exp(-0.5 * ((doy - c) / w) ** 2)  # noqa: E731
+    prof = bump(110, 12, 40) + bump(305, 14, 100) + 0.1  # Apr-May and Oct-Nov, like Punjab
+    segs = season_segments(prof)
+    assert len(segs) == 2
+    big, small = segs
+    assert big.total > small.total  # largest first
+    assert 290 < big.peak_doy < 320 and 95 < small.peak_doy < 125
+    assert all(m.start_doy < m.peak_doy < m.end_doy for m in segs)
+    # one merged season would span both; the segments are each much shorter
+    merged = season_markers(prof)
+    assert merged is not None and merged.length_days > 2 * max(m.length_days for m in segs)
+
+
+def test_one_season_and_wrapping_season_and_empty() -> None:
+    doy = np.arange(365)
+    one = 80 * np.exp(-0.5 * ((doy - 200) / 30.0) ** 2) + 0.1
+    assert len(season_segments(one)) == 1
+    dist = np.minimum(doy, 365 - doy)  # centred on 1 January
+    wrap = season_segments(80 * np.exp(-0.5 * (dist / 20.0) ** 2) + 0.1)
+    assert len(wrap) == 1 and wrap[0].start_doy > wrap[0].end_doy  # straddles new year
+    assert season_segments(np.zeros(365)) == []
+    assert season_segments(np.r_[np.zeros(300), np.ones(3), np.zeros(62)]) == []  # too short
+
+
+def test_tiny_events_in_quiet_periods_are_dropped_by_the_materiality_floor() -> None:
+    dates = [date(2020, 1, 1) + timedelta(days=i) for i in range(6)]
+    sc = pl.DataFrame(
+        {"local_date": dates, "z": [5.0] * 6, "baseline": [0.1] * 6, "harmonized": [2.0] * 6}
+    )
+    assert len(flag_events(sc)) == 1  # a big z score...
+    assert flag_events(sc, min_excess=50.0) == []  # ...but only ~11 units above baseline
+    assert len(flag_events(sc, min_excess=5.0)) == 1

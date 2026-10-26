@@ -82,9 +82,12 @@ def flag_events(
     threshold: float = 2.5,
     min_days: int = 3,
     max_gap: int = 1,
+    min_excess: float = 0.0,
 ) -> list[Event]:
     """Sustained exceedances: |z| > threshold for at least `min_days` consecutive days of the same
-    sign. Gaps of up to `max_gap` non-exceeding days inside a run are bridged."""
+    sign. Gaps of up to `max_gap` non-exceeding days inside a run are bridged. Events whose total
+    departure from the baseline is below `min_excess` (original units) are dropped: a few
+    detections in an almost empty season can score high without mattering."""
     if max_gap not in (0, 1):
         raise ValueError("max_gap must be 0 or 1")
     dates = scores["local_date"].to_list()
@@ -111,7 +114,8 @@ def flag_events(
                 else:
                     break
             seg = slice(i, last_hit + 1)
-            if last_hit - i + 1 >= min_days:
+            excess = float(np.nansum(val[seg] - base[seg]))
+            if last_hit - i + 1 >= min_days and abs(excess) >= min_excess:
                 zz = z[seg]
                 events.append(
                     Event(
@@ -121,7 +125,7 @@ def flag_events(
                         name,
                         float(np.max(sign * zz) * sign),
                         float(zz.mean()),
-                        float(np.nansum(val[seg] - base[seg])),
+                        excess,
                     )
                 )
             i = last_hit + 1

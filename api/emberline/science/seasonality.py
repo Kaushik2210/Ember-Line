@@ -103,3 +103,46 @@ def stl_decompose(weekly: pl.DataFrame, value: str = "value", period: int = 52) 
     return pl.DataFrame(
         {"week": s["week"], "trend": res.trend, "seasonal": res.seasonal, "resid": res.resid}
     )
+
+
+def season_segments(
+    profile: np.ndarray, frac: float = 0.2, min_days: int = 14
+) -> list[SeasonMarkers]:
+    """Separate burning seasons in a climatology, for regions that burn more than once a year.
+
+    A segment is a run of days where the (15-day smoothed) profile stays above `frac` of its
+    maximum, at least `min_days` long. Each gets its own start / peak / end (10/50/90% of the
+    activity inside it). Returned largest first. Empty if there is no activity.
+    """
+    p = np.nan_to_num(np.asarray(profile, dtype=float), nan=0.0)
+    if p.sum() <= 0:
+        return []
+    pad = 15
+    sm = np.convolve(np.concatenate([p[-pad:], p, p[:pad]]), np.ones(15) / 15, mode="same")[
+        pad:-pad
+    ]
+    cut = int(np.argmin(sm))  # start the scan at the quietest day so no season wraps
+    sm_r, p_r = np.roll(sm, -cut), np.roll(p, -cut)
+    above = sm_r >= frac * sm_r.max()
+    segs: list[SeasonMarkers] = []
+    i = 0
+    while i < DOY:
+        if not above[i]:
+            i += 1
+            continue
+        j = i
+        while j + 1 < DOY and above[j + 1]:
+            j += 1
+        seg = p_r[i : j + 1]
+        if j - i + 1 >= min_days and seg.sum() > 0:
+            cum = np.cumsum(seg) / seg.sum()
+            idx = [int(np.searchsorted(cum, q)) for q in (0.10, 0.50, 0.90)]
+            if idx[2] - idx[0] + 1 < max(3, min_days // 2):
+                i = j + 1  # smoothing stretched a brief blip into a run: not a season
+                continue
+            doy = [((i + k + cut) % DOY) + 1 for k in idx]
+            segs.append(
+                SeasonMarkers(doy[0], doy[1], doy[2], idx[2] - idx[0] + 1, float(seg.sum()))
+            )
+        i = j + 1
+    return sorted(segs, key=lambda m: m.total, reverse=True)
