@@ -52,7 +52,14 @@ export function SeasonalityTab({ result }: { result: ResultPayload }) {
     return {
       ...baseOption(c),
       grid: { left: 52, right: 16, top: 24, bottom: 28 },
-      legend: { top: 0, right: 0, textStyle: { color: c.muted, fontSize: 11 }, itemWidth: 14, itemHeight: 8 },
+      legend: {
+        top: 0,
+        right: 0,
+        data: ["P10–P90", "Middle half (IQR)", "Typical (median)", ...(row ? [String(year)] : [])],
+        textStyle: { color: c.muted, fontSize: 11 },
+        itemWidth: 14,
+        itemHeight: 8,
+      },
       tooltip: { ...baseOption(c).tooltip, trigger: "axis" },
       xAxis: {
         type: "category",
