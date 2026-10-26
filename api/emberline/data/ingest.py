@@ -44,7 +44,7 @@ async def ingest_source(
     start: date,
     end: date,
     concurrency: int = 4,
-    tile_deg: float = 10.0,
+    tile_deg: float | None = None,
     on_progress: ProgressFn | None = None,
     max_requests: int | None = None,
 ) -> IngestStats:

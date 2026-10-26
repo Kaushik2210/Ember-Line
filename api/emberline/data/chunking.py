@@ -64,8 +64,12 @@ class Tile:
         return (self.west, self.south, self.east, self.north)
 
 
-def tiles_for(bbox: BBox, size_deg: float = 10.0) -> list[Tile]:
-    """Split a bbox into tiles on a fixed global grid, each clipped to the bbox.
+def tiles_for(bbox: BBox, size_deg: float | None = None) -> list[Tile]:
+    """Split a bbox into tiles. With size_deg=None the bbox itself is the single tile.
+
+    FIRMS bills transactions by rows returned (about 1 per 1000 rows), not per request, and each
+    request takes seconds, so one request per date chunk is the cheapest way to cover a region.
+    With a size, tiles sit on a fixed global grid:
 
     Grid-aligned splitting keeps tile keys stable between overlapping bboxes. A tile that
     is only partly inside the bbox is requested in full so its cache entry is reusable.
@@ -73,6 +77,8 @@ def tiles_for(bbox: BBox, size_deg: float = 10.0) -> list[Tile]:
     w, s, e, n = bbox
     if not (w < e and s < n):
         raise ValueError("bbox must satisfy west < east and south < north")
+    if size_deg is None:
+        return [Tile(w, s, e, n)]
     x0, x1 = math.floor(w / size_deg), math.ceil(e / size_deg)
     y0, y1 = math.floor(s / size_deg), math.ceil(n / size_deg)
     return [

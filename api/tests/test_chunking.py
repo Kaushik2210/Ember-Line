@@ -33,17 +33,23 @@ def test_clip() -> None:
 
 
 def test_tiles_cover_bbox_and_are_stable() -> None:
-    tiles = tiles_for((73.8, 28.4, 77.6, 32.5))
+    tiles = tiles_for((73.8, 28.4, 77.6, 32.5), 10.0)
     assert {t.key for t in tiles} == {"70_20_80_30", "70_30_80_40"}
-    again = tiles_for((74.0, 31.0, 76.0, 32.0))
+    again = tiles_for((74.0, 31.0, 76.0, 32.0), 10.0)
     assert again[0].key == "70_30_80_40"
 
 
 def test_tiles_negative_coordinates() -> None:
-    tiles = tiles_for((-124.5, 32.5, -114.1, 42.0))
+    tiles = tiles_for((-124.5, 32.5, -114.1, 42.0), 10.0)
     assert min(t.west for t in tiles) == -130 and max(t.east for t in tiles) == -110
 
 
 def test_bad_bbox() -> None:
     with pytest.raises(ValueError):
         tiles_for((10, 10, 5, 20))
+
+
+def test_single_tile_is_the_bbox_itself() -> None:
+    (t,) = tiles_for((73.8, 28.4, 77.6, 32.5))
+    assert t.bbox == (73.8, 28.4, 77.6, 32.5)
+    assert t.key == "73.8_28.4_77.6_32.5"
