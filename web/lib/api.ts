@@ -9,7 +9,8 @@ import type {
   ResultPayload,
 } from "./types";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// In production an unset URL means "no API attached": requests fail visibly instead of calling the visitor's own localhost.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 /** An error whose message is safe to show to the user. */
 export class ApiError extends Error {
