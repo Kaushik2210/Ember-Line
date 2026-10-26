@@ -157,6 +157,7 @@ def result_payload(a: Analysis) -> dict[str, Any]:
             "years": e.years,
             "interval_halfwidth_log1p": clean(e.q),
             "level": e.level,
+            "pairs": records(e.pairs),
             "used_before": a.early_cutoff,
         }
     if a.norm:
@@ -168,6 +169,7 @@ def result_payload(a: Analysis) -> dict[str, Any]:
             "years": n.years,
             "interval_halfwidth_log1p": clean(n.q),
             "level": n.level,
+            "pairs": records(n.pairs),
         }
     if h is not None:
         out["harmonized"] = {

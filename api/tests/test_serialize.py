@@ -95,3 +95,13 @@ def test_every_calendar_matrix_shares_one_year_axis(analysis: Analysis) -> None:
     assert all(v is None for v in cal["viirs"][first])
     assert any(v is not None for v in cal["modis"][first])
     assert cal["years"] == sorted(cal["years"])
+
+
+def test_normalisation_pairs_expose_out_of_fold_predictions(analysis: Analysis) -> None:
+    norm = result_payload(analysis)["validation"]["normalization"]
+    pairs = norm["pairs"]
+    assert len(pairs) == norm["n_weeks"]
+    assert {"week", "modis", "viirs", "predicted", "lo", "hi"} <= set(pairs[0])
+    assert all(p["lo"] <= p["predicted"] <= p["hi"] for p in pairs if p["predicted"] is not None)
+    inside = sum(p["lo"] <= p["viirs"] <= p["hi"] for p in pairs) / len(pairs)
+    assert inside > 0.8  # held-out weeks fall inside the nominal 90% band most of the time

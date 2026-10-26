@@ -213,6 +213,8 @@ class NormalizationResult:
     fit_u_max: float
     metric: str = ""
     warnings: list[str] = field(default_factory=list)
+    # weekly overlap with each week's out-of-fold prediction (the year was left out when fitting)
+    pairs: pl.DataFrame = field(default_factory=pl.DataFrame)
 
     def predict_weekly(
         self, modis: np.ndarray, weeks: list[date]
@@ -282,16 +284,29 @@ def fit_normalizer(
     best = force or selectable.row(0, named=True)["model"]
     chosen = next(m for m in candidates if m.name == best)
     final = _fresh(chosen).fit(u, v, season)
+    q = _conformal_q(np.abs(v - oof[best]), level)
+    pred = oof[best]
+    pairs_out = pl.DataFrame(
+        {
+            "week": weeks,
+            "modis": pairs["modis"].to_numpy(),
+            "viirs": pairs["viirs"].to_numpy(),
+            "predicted": np.expm1(pred),
+            "lo": np.maximum(np.expm1(pred - q), 0.0),
+            "hi": np.expm1(pred + q),
+        }
+    )
     return NormalizationResult(
         chosen=best,
         model=final,
         cv=cv,
-        q=_conformal_q(np.abs(v - oof[best]), level),
+        q=q,
         level=level,
         n_weeks=len(u),
         years=years,
         fit_u_max=float(u.max()),
         metric=metric,
+        pairs=pairs_out,
     )
 
 
