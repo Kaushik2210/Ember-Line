@@ -121,3 +121,58 @@ def test_firms_failure_becomes_a_friendly_error(tmp_path: Path) -> None:
         s = wait(c, c.post("/api/analyze", json=BODY).json()["job_id"])
     # chunk failures are skipped (retried next run); the job then reports there is no data
     assert s["status"] == "error" and "TESTKEY" not in json.dumps(s)
+
+
+def _cache_range(
+    root: Path, tile: str, start: date, end: date, skip: set[date] | None = None
+) -> None:
+    """Mark chunks as downloaded (empty) so coverage sees them, except the chunks starting in `skip`."""
+    import polars as pl
+
+    from emberline.data.cache import ParquetCache
+    from emberline.data.chunking import date_chunks
+    from emberline.data.schema import COMMON_SCHEMA
+
+    cache = ParquetCache(root)
+    for src in ("MODIS_SP", "VIIRS_SNPP_SP"):
+        for ch in date_chunks(start, end):
+            if skip and ch.start in skip:
+                continue
+            cache.write(pl.DataFrame(schema=COMMON_SCHEMA), src, tile, ch.start)
+
+
+@respx.mock
+def test_a_small_gap_does_not_block_the_analysis_or_trigger_a_download(tmp_path: Path) -> None:
+    from emberline.data.chunking import date_chunks
+
+    _, area = mock_firms()
+    chunks = date_chunks(date(2018, 1, 1), date(2019, 6, 30))
+    gap = {chunks[3].start, chunks[4].start}  # 2 of ~110 chunks, under 5% of days
+    _cache_range(tmp_path, "10_5_12_7", date(2018, 1, 1), date(2019, 6, 30), skip=gap)
+    # no FIRMS key: a tiny gap must not turn into "not cached"
+    app = create_app(Settings(firms_map_key="", data_dir=tmp_path))
+    with TestClient(app) as c:
+        jid = c.post("/api/analyze", json={**BODY, "bbox": [10.1, 5.2, 11.3, 6.4]}).json()["job_id"]
+        s = wait(c, jid)
+    assert "not cached" not in (s["error"] or "")
+    assert s["error"] is None or "No hotspot data" in s["error"]  # the cached chunks are empty
+    assert area.call_count == 0
+
+
+@respx.mock
+def test_missing_chunks_extend_the_cached_tile_instead_of_a_new_one(tmp_path: Path) -> None:
+    from emberline.data.chunking import date_chunks
+
+    _, area = mock_firms()
+    chunks = date_chunks(date(2018, 1, 1), date(2019, 6, 30))
+    gap = {c.start for c in chunks[10:40]}  # about 27% of the period: a real gap
+    _cache_range(tmp_path, "10_5_12_7", date(2018, 1, 1), date(2019, 6, 30), skip=gap)
+    app = create_app(Settings(firms_map_key="TESTKEY", data_dir=tmp_path))
+    with TestClient(app) as c:
+        wait(
+            c,
+            c.post("/api/analyze", json={**BODY, "bbox": [10.1, 5.2, 11.3, 6.4]}).json()["job_id"],
+        )
+    # only the missing chunks are requested (2 sources), not the whole range under a new tile key
+    assert area.call_count == 2 * len(gap)
+    assert not (tmp_path / "raw" / "src=MODIS_SP" / "tile=10_5_11.5_6.5").exists()

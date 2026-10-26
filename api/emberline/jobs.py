@@ -19,8 +19,13 @@ from typing import Any
 
 from emberline import __version__
 from emberline.data.cache import ParquetCache
-from emberline.data.chunking import snap_bbox
-from emberline.data.coverage import load_availability, observed_dates, save_availability
+from emberline.data.chunking import BBox, snap_bbox
+from emberline.data.coverage import (
+    containing_tile,
+    load_availability,
+    observed_dates,
+    save_availability,
+)
 from emberline.data.firms import Availability, FirmsClient, FirmsError
 from emberline.data.ingest import ingest_source, plan_missing
 from emberline.data.store import HotspotStore
@@ -37,6 +42,9 @@ from emberline.schemas import AnalyzeRequest
 from emberline.serialize import result_payload
 
 log = logging.getLogger(__name__)
+# A gap this small does not stop an analysis: missing days are reported as gaps, not as zeros.
+TOLERATED_GAP = 0.05
+
 CACHE_VERSION = "2"  # bump when the result format or science changes, to invalidate cached results
 
 
@@ -196,32 +204,39 @@ class JobManager:
                 avail = {k: (v.min_date, v.max_date) for k, v in live.items()}
             else:
                 avail = load_availability(root)
-            gaps: list[str] = []
+            gaps: dict[str, float] = {}  # source -> fraction of the wanted days not downloaded
             for sources in REAL_SOURCES.values():
                 for src in sources:
                     if src not in avail:
                         continue
                     lo, hi = max(req.start, avail[src][0]), min(req.end, avail[src][1])
                     need = {date.fromordinal(lo.toordinal() + i) for i in range((hi - lo).days + 1)}
-                    if need - set(observed_dates(root, src, bbox, avail)):
-                        gaps.append(src)
+                    missing = len(need - set(observed_dates(root, src, bbox, avail)))
+                    if missing:
+                        gaps[src] = missing / max(1, len(need))
             if not gaps:
                 return
+            tolerable = all(f <= TOLERATED_GAP for f in gaps.values())
             if client is None:
+                if tolerable:
+                    return  # the pipeline reports the gaps; nothing more can be done offline
                 raise AnalysisError(
                     f"Data for {', '.join(gaps)} is not cached for this region and period, and live "
                     f"download is off (no FIRMS_MAP_KEY). Run scripts/prefetch.py or pick a preset region."
                 )
             cache = ParquetCache(root)
-            snapped = snap_bbox(bbox)
-            plans = {
-                s: plan_missing(cache, s, Availability(s, *avail[s]), snapped, req.start, req.end)[
-                    0
-                ]
-                for s in gaps
-            }
-            total = sum(plans.values())
+            plans: dict[str, tuple[BBox, int]] = {}
+            for s_ in gaps:
+                # extend a cached tile that already holds this area; otherwise a new snapped tile
+                target = containing_tile(root, s_, bbox) or snap_bbox(bbox)
+                todo = plan_missing(
+                    cache, s_, Availability(s_, *avail[s_]), target, req.start, req.end
+                )[0]
+                plans[s_] = (target, todo)
+            total = sum(n for _, n in plans.values())
             if total > self._max_fetch:
+                if tolerable:
+                    return
                 raise AnalysisError(
                     f"This area is not cached and fetching it needs {total} FIRMS requests (limit "
                     f"{self._max_fetch}). Choose a preset region or a shorter period."
@@ -234,13 +249,13 @@ class JobManager:
                 done += 1
                 loop.create_task(job.emit(f"{msg} ({done}/{total})"))
 
-            for src in gaps:
+            for src, (target, _n) in plans.items():
                 await ingest_source(
                     client,
                     cache,
                     src,
                     Availability(src, *avail[src]),
-                    snapped,
+                    target,
                     req.start,
                     req.end,
                     on_progress=on_progress,
