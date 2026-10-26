@@ -162,3 +162,11 @@ def test_harmonize_zero_modis_week_spreads_uniformly(result) -> None:  # type: i
     expected, _, _ = result.predict_weekly(np.array([0.0]), [date(2009, 1, 5)])
     assert first.n_unique() == 1  # no MODIS pattern to follow: spread evenly
     assert first[0] == pytest.approx(float(expected[0]) / 7)
+
+
+def test_force_uses_the_named_model_but_still_scores_all(pairs: pl.DataFrame) -> None:
+    forced = fit_normalizer(pairs, force="isotonic")
+    assert forced.chosen == "isotonic" and forced.model.name == "isotonic"
+    assert set(forced.cv["model"]) == {"huber", "theilsen", "quantile", "isotonic", "raw", "scale"}
+    with pytest.raises(ValueError, match="unknown model"):
+        fit_normalizer(pairs, force="raw")  # baselines cannot be selected

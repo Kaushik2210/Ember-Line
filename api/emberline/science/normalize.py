@@ -232,8 +232,12 @@ def fit_normalizer(
     models: list[Model] | None = None,
     min_weeks: int = MIN_WEEKS,
     metric: str = "",
+    force: str | None = None,
 ) -> NormalizationResult:
-    """Fit candidates on overlap weeks (columns: week, modis, viirs), pick the best by LOYO CV."""
+    """Fit candidates on overlap weeks (columns: week, modis, viirs), pick the best by LOYO CV.
+
+    `force` names a model to use instead of the best one; all candidates are still scored so
+    the comparison stays visible."""
     if pairs.height < min_weeks:
         raise ValueError(f"need at least {min_weeks} overlapping weeks, have {pairs.height}")
     weeks = pairs["week"].to_list()
@@ -272,7 +276,10 @@ def fit_normalizer(
             }
         )
     cv = pl.DataFrame(rows)
-    best = cv.filter(pl.col("selectable")).sort("mae_log").row(0, named=True)["model"]
+    selectable = cv.filter(pl.col("selectable")).sort("mae_log")
+    if force is not None and force not in selectable["model"].to_list():
+        raise ValueError(f"unknown model {force!r}; choose one of {selectable['model'].to_list()}")
+    best = force or selectable.row(0, named=True)["model"]
     chosen = next(m for m in candidates if m.name == best)
     final = _fresh(chosen).fit(u, v, season)
     return NormalizationResult(

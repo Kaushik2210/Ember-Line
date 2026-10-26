@@ -159,6 +159,7 @@ def run_analysis(
     synthetic: bool = False,
     progress: Progress | None = None,
     rings: list[np.ndarray] | None = None,
+    model: str | None = None,
 ) -> Analysis:
     policy = policy or QualityPolicy()
     grid = grid or GridSpec()
@@ -222,7 +223,7 @@ def run_analysis(
     say("Fitting normalisation models")
     pairs = weekly_pairs(daily)
     try:
-        a.norm = fit_normalizer(pairs, metric=metric)
+        a.norm = fit_normalizer(pairs, metric=metric, force=model)
     except ValueError as exc:
         a.notes.append(f"Normalisation not fitted: {exc}.")
         return a
