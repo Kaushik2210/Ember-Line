@@ -158,7 +158,7 @@ def result_payload(a: Analysis) -> dict[str, Any]:
             "interval_halfwidth_log1p": clean(e.q),
             "level": e.level,
             "pairs": records(e.pairs),
-            "used_before": a.early_cutoff,
+            "used_before": clean(a.early_cutoff),
         }
     if a.norm:
         n = a.norm

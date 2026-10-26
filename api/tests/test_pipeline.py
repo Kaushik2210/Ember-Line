@@ -207,6 +207,16 @@ def test_terra_only_years_use_their_own_model_and_are_not_mistaken_for_quiet_yea
     a = run_analysis(HotspotStore(tmp_path), BBOX, start, end, synthetic=True)
 
     assert a.norm_early is not None and a.early_cutoff == AQUA_FIRE_START
+
+    # the whole payload, Terra-only block included, must be strict JSON (it is saved to disk)
+    import json
+
+    from emberline.serialize import result_payload
+
+    payload = result_payload(a)
+    json.dumps(payload, allow_nan=False)
+    terra = payload["validation"]["normalization_terra_only"]
+    assert terra["used_before"] == "2002-07-04" and terra["pairs"]
     assert any("Before 2002-07-04 only Terra reports" in n for n in a.notes)
     h = a.harmonized
     assert set(h["modis_basis"].unique()) == {"terra", "terra+aqua"}
