@@ -54,7 +54,7 @@ async def run(args: argparse.Namespace) -> None:
     if args.nrt:
         sources += [NRT_FOR[s] for s in args.sources if s in NRT_FOR]
 
-    async with FirmsClient(settings.firms_map_key) as client:
+    async with FirmsClient(settings.firms_map_key, guard_every=8) as client:
         avail = await client.availability()
         status = await client.key_status()
         print(f"FIRMS key status: {status}")
