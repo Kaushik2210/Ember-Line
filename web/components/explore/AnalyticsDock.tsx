@@ -8,6 +8,7 @@ import { useExploreStore } from "@/lib/store";
 import { TABS, type Tab, useExploreParams } from "@/lib/urlState";
 import { AgreementTab } from "./tabs/AgreementTab";
 import { AnomaliesTab } from "./tabs/AnomaliesTab";
+import { Provenance } from "./Provenance";
 import { CalendarTab } from "./tabs/CalendarTab";
 import { QualityTab } from "./tabs/QualityTab";
 import { SeasonalityTab } from "./tabs/SeasonalityTab";
@@ -139,6 +140,7 @@ export function AnalyticsDock() {
       {open && (
         <div role="tabpanel" id={`panel-${p.tab}`} aria-labelledby={`tab-${p.tab}`} className="min-h-0 flex-1 overflow-auto">
           {body}
+          {data && phase !== "running" && <Provenance result={data} />}
         </div>
       )}
     </section>
