@@ -140,8 +140,11 @@ def season_totals(daily: pl.DataFrame, value: str = "harmonized") -> pl.DataFram
         return pl.DataFrame(schema={"season": pl.Utf8, "total": pl.Float64, "year0": pl.Int64})
     sm = np.convolve(np.concatenate([clim[-15:], clim, clim[:15]]), np.ones(31) / 31, mode="same")
     cut = int(np.argmin(sm[15:-15]))  # 0-based day of year where a fire year starts
-    # name a season by the year its peak falls in; if the peak is after New Year it spans two
-    peak_in_start_year = markers.peak_doy > cut
+    # A season is named by the calendar year its peak falls in. Only a season that itself
+    # straddles New Year (10% start after 90% end in calendar terms, e.g. the austral summer)
+    # is named like "2019-20".
+    straddles = markers.start_doy > markers.end_doy
+    peak_year_offset = 0 if markers.peak_doy > cut else 1
     rows = []
     for yi, y in enumerate(years):
         a = mat[yi, cut:]
@@ -149,7 +152,7 @@ def season_totals(daily: pl.DataFrame, value: str = "harmonized") -> pl.DataFram
         part = np.concatenate([a, b]) if cut > 0 else mat[yi]
         if np.isnan(part).any():
             continue
-        label = f"{y}" if cut == 0 or peak_in_start_year else f"{y}-{str(y + 1)[-2:]}"
+        label = f"{y}-{str(y + 1)[-2:]}" if straddles else str(y + peak_year_offset)
         rows.append((label, float(part.sum()), y))
     return pl.DataFrame(rows, schema=["season", "total", "year0"], orient="row")
 

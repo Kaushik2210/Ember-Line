@@ -153,3 +153,16 @@ def test_descriptions_are_plain_language(daily: pl.DataFrame) -> None:
     assert "robust standard deviations" in text and "other years" in text
     assert "2008" in describe_season("2008", 4.1, 13)
     assert "12 fire years" in describe_season("2008", 4.1, 13)
+
+
+def test_season_labels_follow_the_peak_or_straddle_new_year() -> None:
+    # northern-style season peaking in July: named by the peak's calendar year
+    north = season_totals(make_daily(range(2000, 2006)))
+    assert north.height > 0 and all(s.isdigit() for s in north["season"])
+    # austral-style season centred on 1 January: named like 2019-20
+    days = [date(2000, 1, 1) + timedelta(days=i) for i in range(6 * 365 + 2)]
+    doy = np.array([d.timetuple().tm_yday for d in days])
+    dist = np.minimum(doy, 365 - doy)  # distance to 1 January
+    v = 50 * np.exp(-0.5 * (dist / 25.0) ** 2) + 0.01
+    south = season_totals(pl.DataFrame({"local_date": days, "harmonized": v}))
+    assert south.height > 0 and all("-" in s for s in south["season"])
