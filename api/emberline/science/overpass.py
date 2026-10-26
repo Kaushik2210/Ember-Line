@@ -201,6 +201,8 @@ def match_coincident(
         "n_viirs": float(viirs.height),
         "modis_not_coobserved": float(modis.height - n_m),
         "viirs_not_coobserved": float(viirs.height - n_v),
+        "n_modis_eval": float(n_m),  # co-observed counts: weights for combining periods
+        "n_viirs_eval": float(n_v),
         # share of co-observed MODIS pixels that VIIRS also saw / VIIRS pixels MODIS also saw
         "modis_corroborated_by_viirs": _mean(m_eval["matched"]) if n_m else float("nan"),
         "viirs_corroborated_by_modis": _mean(v_eval["matched"]) if n_v else float("nan"),
@@ -241,3 +243,28 @@ def match_coincident(
         {"n": "n_modis", "matched_rate": "modis_corroborated"}
     )
     return MatchResult(summary, ratio, by_scan, by_frp, by_dn, pairs)
+
+
+def combine_summaries(parts: list[dict[str, float]]) -> dict[str, float]:
+    """Merge summaries of several matches (e.g. one per year), weighting rates by co-observed counts."""
+    parts = [p for p in parts if p.get("n_modis_eval") is not None]
+    out: dict[str, float] = {}
+    for key in (
+        "n_modis",
+        "n_viirs",
+        "modis_not_coobserved",
+        "viirs_not_coobserved",
+        "n_modis_eval",
+        "n_viirs_eval",
+    ):
+        out[key] = sum(p.get(key, 0.0) for p in parts)
+    for rate, weight in (
+        ("modis_corroborated_by_viirs", "n_modis_eval"),
+        ("viirs_corroborated_by_modis", "n_viirs_eval"),
+    ):
+        w = [(p[rate], p[weight]) for p in parts if p.get(weight, 0) > 0 and p[rate] == p[rate]]
+        tot = sum(x for _, x in w)
+        out[rate] = sum(r * x for r, x in w) / tot if tot else float("nan")
+    out["modis_unseen_by_viirs"] = 1.0 - out["modis_corroborated_by_viirs"]
+    out["viirs_unseen_by_modis"] = 1.0 - out["viirs_corroborated_by_modis"]
+    return out

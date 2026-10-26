@@ -5,7 +5,12 @@ import polars as pl
 import pytest
 
 from emberline.data.schema import COMMON_SCHEMA, add_time_columns
-from emberline.science.overpass import _nearest_within, _points, match_coincident
+from emberline.science.overpass import (
+    _nearest_within,
+    _points,
+    combine_summaries,
+    match_coincident,
+)
 
 T0 = datetime(2020, 1, 1, 8, 0)
 M_PER_DEG_LAT = 111_195.0
@@ -143,3 +148,39 @@ def test_empty_inputs() -> None:
     empty = pl.DataFrame(schema=COMMON_SCHEMA)
     r = match_coincident(empty, frame([det("viirs", 30.0, 75.0)]))
     assert r.summary["n_modis"] == 0.0 and r.by_frp.height == 0
+
+
+def test_combine_summaries_weights_by_coobserved_counts() -> None:
+    a = {
+        "n_modis": 10.0,
+        "n_viirs": 10.0,
+        "modis_not_coobserved": 0.0,
+        "viirs_not_coobserved": 0.0,
+        "n_modis_eval": 10.0,
+        "n_viirs_eval": 10.0,
+        "modis_corroborated_by_viirs": 1.0,
+        "viirs_corroborated_by_modis": 0.5,
+    }
+    b = {
+        "n_modis": 30.0,
+        "n_viirs": 30.0,
+        "modis_not_coobserved": 5.0,
+        "viirs_not_coobserved": 5.0,
+        "n_modis_eval": 30.0,
+        "n_viirs_eval": 30.0,
+        "modis_corroborated_by_viirs": 0.0,
+        "viirs_corroborated_by_modis": 0.1,
+    }
+    c = combine_summaries([a, b])
+    assert c["n_modis"] == 40.0 and c["modis_not_coobserved"] == 5.0
+    assert c["modis_corroborated_by_viirs"] == pytest.approx(0.25)
+    assert c["viirs_corroborated_by_modis"] == pytest.approx((5 + 3) / 40)
+    assert c["modis_unseen_by_viirs"] == pytest.approx(0.75)
+    assert combine_summaries([])["n_modis"] == 0.0
+
+
+def test_summary_reports_coobserved_counts() -> None:
+    m = frame([det("modis", 30.0, 75.0), det("modis", 32.0, 75.0)])
+    v = frame([det("viirs", 30.0 + north(100), 75.0, 1)])
+    r = match_coincident(m, v)
+    assert r.summary["n_modis_eval"] == 1.0 and r.summary["n_viirs_eval"] == 1.0
