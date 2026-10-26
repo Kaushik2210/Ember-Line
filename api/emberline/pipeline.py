@@ -34,6 +34,7 @@ from emberline.science.seasonality import (
     climatology,
     doy_matrix,
     season_markers,
+    stl_decompose,
 )
 from emberline.science.series import calendar_series, weekly_pairs
 
@@ -75,6 +76,7 @@ class Analysis:
     notes: list[str] = field(default_factory=list)
     platforms: pl.DataFrame = field(default_factory=pl.DataFrame)  # first/last day per platform
     annotations: list[Annotation] = field(default_factory=list)  # documented events
+    stl: pl.DataFrame | None = None  # weekly trend / seasonal / residual (log1p scale)
 
 
 def _merge_tables(tables: list[pl.DataFrame], key: str) -> pl.DataFrame:
@@ -231,6 +233,7 @@ def run_analysis(
     if len(years) >= 3:
         a.climatology = climatology(mat)
         a.markers = season_markers(np.nanmedian(mat, axis=0))
+        a.stl = _weekly_stl(a.harmonized)
         a.scores = loyo_zscores(a.harmonized)
         a.events = flag_events(a.scores)
         try:
@@ -282,3 +285,22 @@ def _data_notes(
                     f"{missing} days have no data."
                 )
     return notes
+
+
+def _weekly_stl(harmonized: pl.DataFrame) -> pl.DataFrame | None:
+    """STL on weekly harmonised totals (complete weeks only); None if under two years."""
+    w = (
+        harmonized.with_columns(pl.col("local_date").dt.truncate("1w").alias("week"))
+        .group_by("week")
+        .agg(
+            pl.col("harmonized").count().alias("n"),
+            pl.col("harmonized").sum().alias("value"),
+        )
+        .filter(pl.col("n") == 7)
+        .select("week", "value")
+        .sort("week")
+    )
+    try:
+        return stl_decompose(w)
+    except ValueError:
+        return None

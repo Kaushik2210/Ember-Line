@@ -172,3 +172,12 @@ def test_real_run_gets_documented_events(tmp_path: Path) -> None:
 
     titles = [e.title for e in annotations_for(date(2012, 1, 1), date(2024, 1, 1))]
     assert "Terra's last inclination maneuver; orbit drift begins" in titles
+
+
+def test_stl_is_computed_on_the_harmonised_weekly_series(analysis) -> None:  # type: ignore[no-untyped-def]
+    s = analysis.stl
+    assert s is not None and s.height > 104
+    assert set(s.columns) == {"week", "trend", "seasonal", "resid"}
+    assert (
+        s["seasonal"].max() - s["seasonal"].min() > 1.0
+    )  # clear yearly cycle in the synthetic data

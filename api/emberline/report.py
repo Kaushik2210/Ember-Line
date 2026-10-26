@@ -126,6 +126,13 @@ def report(a: Analysis, name: str, coverage: pl.DataFrame) -> str:
             f"Fire season (10% / 50% / 90% of cumulative activity): day of year "
             f"{m.start_doy} / {m.peak_doy} / {m.end_doy}, about {m.length_days} days long."
         )
+    if a.stl is not None and a.stl.height:
+        seas, trend = a.stl["seasonal"].to_numpy(), a.stl["trend"].to_numpy()
+        L.append(
+            f"\nSTL decomposition of {a.stl.height} weekly totals (log1p scale): the seasonal "
+            f"component spans {seas.min():.2f} to {seas.max():.2f}; the trend "
+            f"moves from {trend[0]:.2f} to {trend[-1]:.2f}."
+        )
     if a.seasons is not None and a.seasons.height:
         L.append("\n## 6. Most unusual seasons\n")
         for r in a.seasons.head(5).iter_rows(named=True):
