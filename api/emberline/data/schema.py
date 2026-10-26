@@ -66,9 +66,9 @@ def add_time_columns(df: pl.DataFrame) -> pl.DataFrame:
     shifted = utc_hour + pl.col("longitude") / 15.0
     return df.with_columns(
         (shifted % 24.0).alias("local_solar_hour"),
-        (pl.col("acq_utc").dt.date() + pl.duration(days=(shifted / 24.0).floor().cast(pl.Int64))).alias(
-            "local_date"
-        ),
+        (
+            pl.col("acq_utc").dt.date() + pl.duration(days=(shifted / 24.0).floor().cast(pl.Int64))
+        ).alias("local_date"),
     )
 
 
@@ -88,10 +88,7 @@ def normalize_firms_csv(text: str, source: str) -> pl.DataFrame:
     def col(name: str) -> pl.Expr:
         return pl.col(name) if name in cols else pl.lit(None, dtype=pl.Utf8)
 
-    if modis:
-        platform = col("satellite")
-    else:
-        platform = pl.lit(VIIRS_PLATFORM_BY_SOURCE[source])
+    platform = col("satellite") if modis else pl.lit(VIIRS_PLATFORM_BY_SOURCE[source])
 
     df = raw.select(
         pl.lit(source).alias("source"),
@@ -99,17 +96,19 @@ def normalize_firms_csv(text: str, source: str) -> pl.DataFrame:
         platform.alias("platform"),
         col("latitude").cast(pl.Float64),
         col("longitude").cast(pl.Float64),
-        (
-            col("acq_date") + pl.lit(" ") + col("acq_time").str.zfill(4)
-        )
+        (col("acq_date") + pl.lit(" ") + col("acq_time").str.zfill(4))
         .str.to_datetime("%Y-%m-%d %H%M", time_unit="us")
         .alias("acq_utc"),
         col("daynight"),
         col("frp").cast(pl.Float64),
-        (col("confidence").cast(pl.Float64, strict=False) if modis else pl.lit(None, dtype=pl.Float64)).alias(
-            "conf_num"
+        (
+            col("confidence").cast(pl.Float64, strict=False)
+            if modis
+            else pl.lit(None, dtype=pl.Float64)
+        ).alias("conf_num"),
+        (pl.lit(None, dtype=pl.Utf8) if modis else col("confidence").str.to_lowercase()).alias(
+            "conf_class"
         ),
-        (pl.lit(None, dtype=pl.Utf8) if modis else col("confidence").str.to_lowercase()).alias("conf_class"),
         col(primary).cast(pl.Float64).alias("bright_primary"),
         col(secondary).cast(pl.Float64).alias("bright_secondary"),
         col("scan").cast(pl.Float64),
@@ -117,5 +116,9 @@ def normalize_firms_csv(text: str, source: str) -> pl.DataFrame:
         col("type").cast(pl.Int64, strict=False).alias("fire_type"),
         pl.lit(False).alias("synthetic"),
     )
-    df = add_time_columns(df.with_columns(pl.lit(0.0).alias("local_solar_hour"), pl.lit(None, dtype=pl.Date).alias("local_date")))
+    df = add_time_columns(
+        df.with_columns(
+            pl.lit(0.0).alias("local_solar_hour"), pl.lit(None, dtype=pl.Date).alias("local_date")
+        )
+    )
     return df.select(list(COMMON_SCHEMA)).cast(COMMON_SCHEMA)  # type: ignore[arg-type]

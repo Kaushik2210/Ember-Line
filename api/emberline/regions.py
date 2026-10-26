@@ -36,7 +36,7 @@ REGIONS: list[Region] = [
         id="eastern-australia",
         name="Eastern Australia (NSW / Victoria)",
         bbox=(140.9, -39.2, 153.7, -28.1),
-        blurb="Home of the 2019-20 Black Summer fires, the headline anomaly of this record.",
+        blurb="Home of the 2019-20 Black Summer fires, the headline anomaly.",
         default_start="2012-06-01",
         default_end="2024-12-31",
     ),

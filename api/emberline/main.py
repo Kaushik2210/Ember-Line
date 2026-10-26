@@ -9,8 +9,12 @@ from emberline.config import get_settings
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="EMBERLINE API", version=__version__, docs_url="/api/docs",
-                  openapi_url="/api/openapi.json")
+    app = FastAPI(
+        title="EMBERLINE API",
+        version=__version__,
+        docs_url="/api/docs",
+        openapi_url="/api/openapi.json",
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.web_origin],

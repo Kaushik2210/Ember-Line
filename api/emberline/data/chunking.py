@@ -32,7 +32,10 @@ def date_chunks(start: date, end: date) -> list[DateChunk]:
         return []
     first = (start - _EPOCH).days // MAX_DAY_RANGE
     last = (end - _EPOCH).days // MAX_DAY_RANGE
-    return [DateChunk(_EPOCH + timedelta(days=i * MAX_DAY_RANGE), MAX_DAY_RANGE) for i in range(first, last + 1)]
+    return [
+        DateChunk(_EPOCH + timedelta(days=i * MAX_DAY_RANGE), MAX_DAY_RANGE)
+        for i in range(first, last + 1)
+    ]
 
 
 def clip_chunk(chunk: DateChunk, lo: date, hi: date) -> DateChunk | None:
