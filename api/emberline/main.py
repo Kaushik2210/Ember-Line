@@ -1,35 +1,37 @@
 """FastAPI application entrypoint."""
 
+from __future__ import annotations
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from emberline import __version__
-from emberline.config import get_settings
+from emberline.config import Settings, get_settings
+from emberline.data.store import HotspotStore
+from emberline.jobs import JobManager
+from emberline.routes import router
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
     app = FastAPI(
         title="EMBERLINE API",
         version=__version__,
+        description="Harmonized MODIS + VIIRS fire record. Data: NASA FIRMS.",
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.web_origin],
+        allow_origins=[settings.web_origin],  # locked to the web app, no wildcard
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
-
-    @app.get("/api/health")
-    def health() -> dict[str, object]:
-        return {
-            "status": "ok",
-            "version": __version__,
-            "firms_key_configured": bool(settings.firms_map_key),
-        }
-
+    store = HotspotStore(settings.data_dir)
+    app.state.settings = settings
+    app.state.store = store
+    app.state.jobs = JobManager(store, settings.data_dir / "results")
+    app.include_router(router)
     return app
 
 
