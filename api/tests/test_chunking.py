@@ -9,9 +9,9 @@ def test_chunks_cover_range_and_are_grid_aligned() -> None:
     chunks = date_chunks(date(2019, 11, 3), date(2019, 11, 27))
     assert chunks[0].start <= date(2019, 11, 3) <= chunks[0].end
     assert chunks[-1].start <= date(2019, 11, 27) <= chunks[-1].end
-    assert all(c.days == 10 for c in chunks)
+    assert all(c.days == 5 for c in chunks)
     for a, b in zip(chunks, chunks[1:], strict=False):
-        assert (b.start - a.start).days == 10
+        assert (b.start - a.start).days == 5
 
 
 def test_same_day_in_different_requests_hits_same_chunk() -> None:

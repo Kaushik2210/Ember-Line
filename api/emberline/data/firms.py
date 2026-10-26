@@ -17,6 +17,7 @@ from datetime import date
 
 import httpx
 
+from emberline.data.chunking import MAX_DAY_RANGE
 from emberline.data.limiter import RateLimiter
 
 log = logging.getLogger(__name__)
@@ -133,8 +134,8 @@ class FirmsClient:
         return json.loads(text)  # type: ignore[no-any-return]
 
     async def area_csv(self, source: str, bbox: BBox, start: date, days: int) -> str:
-        if not 1 <= days <= 10:
-            raise ValueError("FIRMS day range must be 1-10")
+        if not 1 <= days <= MAX_DAY_RANGE:
+            raise ValueError(f"FIRMS day range must be 1-{MAX_DAY_RANGE}")
         w, s, e, n = bbox
         url = f"{BASE}/api/area/csv/{self._key}/{source}/{w:g},{s:g},{e:g},{n:g}/{days}/{start.isoformat()}"
         return await self._get_text(url)

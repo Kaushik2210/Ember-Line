@@ -39,16 +39,16 @@ async def test_availability_parsed() -> None:
 async def test_area_url_shape() -> None:
     route = respx.get(url__regex=r".*").mock(return_value=httpx.Response(200, text="a,b\n"))
     async with httpx.AsyncClient() as http:
-        await make(http).area_csv("MODIS_SP", (74, 29, 77.5, 32), date(2019, 11, 1), 10)
+        await make(http).area_csv("MODIS_SP", (74, 29, 77.5, 32), date(2019, 11, 1), 5)
     assert str(route.calls[0].request.url).endswith(
-        f"/api/area/csv/{KEY}/MODIS_SP/74,29,77.5,32/10/2019-11-01"
+        f"/api/area/csv/{KEY}/MODIS_SP/74,29,77.5,32/5/2019-11-01"
     )
 
 
 async def test_day_range_validated() -> None:
     async with httpx.AsyncClient() as http, make(http) as c:
         with pytest.raises(ValueError):
-            await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 11)
+            await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 6)
 
 
 @respx.mock

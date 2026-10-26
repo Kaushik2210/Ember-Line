@@ -1,6 +1,6 @@
 """Date and spatial chunking so each FIRMS request is small and cache keys are stable.
 
-Date chunks sit on a fixed 10-day grid anchored at 2000-01-01, so overlapping requests
+Date chunks sit on a fixed 5-day grid anchored at 2000-01-01, so overlapping requests
 from different analyses reuse the same cache entries.
 """
 
@@ -10,7 +10,9 @@ import math
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-MAX_DAY_RANGE = 10
+# The live FIRMS area API answers "Invalid day range. Expects [1..5]" above 5 days
+# (the public docs say 10), so 5 is what is verified to work.
+MAX_DAY_RANGE = 5
 _EPOCH = date(2000, 1, 1)
 
 BBox = tuple[float, float, float, float]
