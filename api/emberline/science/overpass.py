@@ -5,7 +5,9 @@ detections that are close in space and time describe the same fires. Matching th
 each sensor catches that the other misses, free of overpass-time differences.
 
 Matching rule: a VIIRS detection is matched to the nearest MODIS detection within `max_dist_m`
-and `max_dt_min` (default 750 m, 10 min). Several VIIRS pixels can fall in one MODIS pixel, so
+and `max_dt_min` (default 750 m, 30 min). Measured on Punjab/Haryana data, SNPP detections trail
+Aqua detections of the same place by a median of ~16 min (IQR about -10 to +28), so a 10 min window
+would discard most true coincidences; see docs/DECISIONS.md. Several VIIRS pixels can fall in one MODIS pixel, so
 the relation is many-to-one; a MODIS pixel is "corroborated" if at least one VIIRS pixel matched.
 
 Co-observation: a detection can only be judged by the other sensor if that sensor was looking.
@@ -130,7 +132,7 @@ def match_coincident(
     modis: pl.DataFrame,
     viirs: pl.DataFrame,
     max_dist_m: float = 750.0,
-    max_dt_min: float = 10.0,
+    max_dt_min: float = 30.0,
     cooccur_km: float = 25.0,
 ) -> MatchResult:
     """Match Aqua-MODIS (or any MODIS input) against SNPP-VIIRS. Inputs are common-schema frames."""
