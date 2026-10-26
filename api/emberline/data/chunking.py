@@ -86,3 +86,14 @@ def tiles_for(bbox: BBox, size_deg: float | None = None) -> list[Tile]:
         for i in range(x0, x1)
         for j in range(y0, y1)
     ]
+
+
+def snap_bbox(bbox: BBox, step: float = 0.5) -> BBox:
+    """Grow a bbox outward to a grid of `step` degrees, so nearby user boxes share cache keys."""
+    w, s, e, n = bbox
+    return (
+        math.floor(w / step) * step,
+        math.floor(s / step) * step,
+        math.ceil(e / step) * step,
+        math.ceil(n / step) * step,
+    )

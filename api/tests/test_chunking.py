@@ -53,3 +53,13 @@ def test_single_tile_is_the_bbox_itself() -> None:
     (t,) = tiles_for((73.8, 28.4, 77.6, 32.5))
     assert t.bbox == (73.8, 28.4, 77.6, 32.5)
     assert t.key == "73.8_28.4_77.6_32.5"
+
+
+def test_snap_bbox_only_grows_and_is_shared_by_nearby_boxes() -> None:
+    from emberline.data.chunking import snap_bbox
+
+    a = snap_bbox((74.13, 29.02, 76.88, 31.51))
+    b = snap_bbox((74.40, 29.40, 76.60, 31.90))
+    assert a == (74.0, 29.0, 77.0, 32.0) == b
+    w, s, e, n = snap_bbox((10.0, 20.0, 11.0, 21.0))
+    assert (w, s, e, n) == (10.0, 20.0, 11.0, 21.0)  # already on the grid: unchanged
