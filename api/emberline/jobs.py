@@ -244,6 +244,11 @@ class JobManager:
             loop = asyncio.get_running_loop()
             done = 0
 
+            def on_wait(msg: str) -> None:
+                loop.create_task(job.emit(msg))
+
+            client.on_wait = on_wait
+
             def on_progress(msg: str) -> None:
                 nonlocal done
                 done += 1
