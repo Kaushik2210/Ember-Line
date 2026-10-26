@@ -70,7 +70,18 @@ export interface CvRow {
   coverage: number | null;
 }
 
+export interface WeeklyPair {
+  week: string;
+  modis: number;
+  viirs: number;
+  /** Prediction from a model fitted without that week's year. */
+  predicted: number | null;
+  lo: number | null;
+  hi: number | null;
+}
+
 export interface NormalizationInfo {
+  pairs: WeeklyPair[];
   chosen: string;
   cv: CvRow[];
   n_weeks: number;
