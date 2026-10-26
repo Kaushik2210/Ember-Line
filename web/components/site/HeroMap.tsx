@@ -24,7 +24,15 @@ export function HeroMap({ entry }: { entry: ShowcaseEntry | null }) {
 
   if (!entry || !day) return null;
   return (
-    <div aria-hidden className="absolute inset-0">
+    // the points fade out toward the text so the headline stays readable
+    <div
+      aria-hidden
+      className="absolute inset-0"
+      style={{
+        maskImage: "linear-gradient(90deg, transparent 0%, transparent 30%, black 72%)",
+        WebkitMaskImage: "linear-gradient(90deg, transparent 0%, transparent 30%, black 72%)",
+      }}
+    >
       <SensorMap sensor="viirs" day={day} buffers={buffers} area={entry.bbox} drawing={false} interactive={false} />
     </div>
   );
