@@ -29,3 +29,17 @@
   hotspots (capped at 50k, aggregated above), availability, regions, export (CSV, GeoJSON, methods card).
 - Guardrails (area, period, GeoJSON size), live fetch for uncached areas with a request cap, CORS
   locked to the web origin.
+
+## Phase 5: Explore UI
+- `/explore` workspace: left rail (region presets, search, draw a box, upload GeoJSON; period; sensors;
+  quality policy; grid; model), run panel with live stage names, header with share, export and theme.
+- Map: GIBS true-colour imagery, deck.gl hotspots from typed arrays, MODIS | VIIRS compare slider,
+  overlay mode, time scrubber with play, click-for-details, box drawing, PNG export.
+- Analytics dock: harmonized calendar (canvas, raw MODIS / raw VIIRS / harmonized), seasonality
+  (ribbons, selected year, per-season markers, STL), unusual periods, sensor agreement (held-out
+  before/after scatter, overpass table) and data quality (platform timeline, sourced events).
+- "Why they differ" drawer with explanations tied to the run's own numbers; provenance line with the
+  NASA acknowledgment; CSV, GeoJSON and methods-card export; PNG on every chart.
+- All state that defines a view (region, period, options, tab, day, job) lives in the URL.
+- API additions found while using it: weekly out-of-fold predictions in the payload, live fetch that
+  extends a cached tile and tolerates small gaps, a "waiting for NASA's limit" stage.

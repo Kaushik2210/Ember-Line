@@ -15,7 +15,7 @@ uv run uvicorn emberline.main:app --reload --port 8000
 ```
 
 ```bash
-cd web && npm install && npm run dev
+cd web && npm install && npm run dev      # open http://localhost:3000/explore
 ```
 
 ## Keys
@@ -38,7 +38,8 @@ shown as real. FIRMS API quirks found while building this are listed in `docs/DE
 
 ## Status
 
-Phases 1 to 4 (scaffold, data layer, science core, API) are done; the web app is next. See
+Phases 1 to 5 (scaffold, data layer, science core, API, Explore UI) are done; the landing, atlas,
+method and about pages are next. See
 `CHANGELOG.md`. A real-data validation report for Punjab/Haryana is in `docs/validation/`.
 
 API docs: run the API and open `/api/docs`.

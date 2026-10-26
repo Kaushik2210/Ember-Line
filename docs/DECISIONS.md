@@ -85,3 +85,23 @@
   week), which is forest burning, not cropland.
 - **Matching is Aqua-MODIS vs SNPP-VIIRS only.** Terra (10:30) and the NOAA satellites are not used for
   the coincident-overpass validation.
+
+## Web app choices
+
+- **GIBS thermal-anomaly layers are vector tiles (MVT), not PNG rasters.** Read from the live
+  GetCapabilities document (Levels 7 and 8). Their source-layer names were not verified, so they are not
+  drawn; hotspots come from our own FIRMS-derived points. True-colour imagery is JPEG on
+  GoogleMapsCompatible_Level9 (Terra from 2000-02-24, Suomi NPP from 2015-11-24); before that date the
+  VIIRS side of the compare map falls back to Terra imagery and says so.
+- **MapLibre's worker is served from `public/maplibre/`.** Turbopack cannot resolve it, so
+  `scripts/copy-maplibre-worker.mjs` copies it on install, dev and build (git-ignored, generated).
+- **The compare map is two synchronised maps clipped by a slider,** not one map with a filter: each
+  side has its own imagery and its own deck.gl layer.
+- **The default day is the busiest day VIIRS actually observed,** so the first thing shown is somewhere
+  the two sensors can be compared.
+- **Charts show only what the API computed.** The before/after scatter uses out-of-fold predictions
+  (the year is left out when fitting), so the "after" picture is not self-flattering.
+- **A job's cached result is keyed by a version.** Changing the payload bumps `CACHE_VERSION`.
+- **Live fetch is capped (300 requests) and tolerant of gaps up to 5%.** Missing chunks extend the
+  cached tile that already holds the area instead of creating a new one. A gap is reported as missing
+  data in the series, never as zeros.
