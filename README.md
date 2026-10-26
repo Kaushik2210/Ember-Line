@@ -38,8 +38,8 @@ shown as real. FIRMS API quirks found while building this are listed in `docs/DE
 
 ## Status
 
-Phases 1 to 5 (scaffold, data layer, science core, API, Explore UI) are done; the landing, atlas,
-method and about pages are next. See
+Phases 1 to 6 (scaffold, data layer, science core, API, Explore UI, landing/atlas/method/about) are done;
+the polish pass and the submission kit are next. See
 `CHANGELOG.md`. A real-data validation report for Punjab/Haryana is in `docs/validation/`.
 
 API docs: run the API and open `/api/docs`.

@@ -105,3 +105,17 @@
 - **Live fetch is capped (300 requests) and tolerant of gaps up to 5%.** Missing chunks extend the
   cached tile that already holds the area instead of creating a new one. A gap is reported as missing
   data in the series, never as zeros.
+
+## Site pages
+
+- **Every number on the landing page, atlas and method page is computed.** `findings.py` distils a
+  finished analysis; the pages never contain typed-in results. When a region has no data on disk the
+  page says so and shows no figures. Synthetic findings are never featured.
+- **Region defaults are the full record** (2000-11-01 to 2025-12-31). The first run showed 2012 to 2024
+  and so nothing was reconstructed, which undersold the main feature.
+- **The showcase never downloads.** A page view must not spend the FIRMS budget, so it analyses with
+  `allow_fetch=False`; a region whose data is missing is "unavailable" and is retried after five minutes.
+- **Stories come out of the data.** For Eastern Australia the pipeline's top season is 2019-20, at 7.2
+  robust standard deviations above the other fire years, without being told to look for it.
+- **Left for the authors to supply:** team names and a code license (the About page says "see the
+  repository" and cites "EMBERLINE contributors").

@@ -43,3 +43,17 @@
 - All state that defines a view (region, period, options, tab, day, job) lives in the URL.
 - API additions found while using it: weekly out-of-fold predictions in the payload, live fetch that
   extends a cached tile and tolerates small gaps, a "waiting for NASA's limit" stage.
+
+## Phase 6: landing, atlas, method, about
+- `/` landing: full-bleed hero with the real detections of the featured region's busiest day over NASA
+  imagery, three proof statistics computed from the record, honest empty states, the four challenge
+  questions linked into the workspace.
+- `/atlas`: six regions, each with its narrative and the findings the pipeline computed (seasons,
+  sensor agreement, bias before and after, standout seasons and events), and a deep link into `/explore`.
+- `/method`: written for scientists, with equations, parameters, assumptions and limitations, sourced
+  references, and a live validation table computed from the record.
+- `/about`: sources, the NASA acknowledgment verbatim, how to cite, and what the project is not.
+- API: `findings` (headline facts distilled from a result) and `GET /api/showcase`, which never
+  downloads from FIRMS and remembers failures for five minutes.
+- Region defaults are now the full record (2000-11-01 to 2025-12-31), so the reconstruction is what
+  people see first.
