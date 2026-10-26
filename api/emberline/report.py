@@ -12,18 +12,20 @@ from emberline.science.series import METRICS, calendar_series, weekly_pairs
 def md(df: pl.DataFrame, floats: int = 3) -> str:
     if df.height == 0:
         return "_(none)_"
+    plain = {"year", "doy"}  # identifiers, not quantities: no thousands separators
     rows = []
     for r in df.iter_rows():
-        rows.append(
-            [
-                f"{v:,.{floats}f}"
-                if isinstance(v, float)
-                else f"{v:,}"
-                if isinstance(v, int) and not isinstance(v, bool)
-                else str(v)
-                for v in r
-            ]
-        )
+        cells = []
+        for name, v in zip(df.columns, r, strict=True):
+            if isinstance(v, bool) or name in plain:
+                cells.append(str(v))
+            elif isinstance(v, float):
+                cells.append(f"{v:,.{floats}f}")
+            elif isinstance(v, int):
+                cells.append(f"{v:,}")
+            else:
+                cells.append(str(v))
+        rows.append(cells)
     out = ["| " + " | ".join(df.columns) + " |", "|" + "|".join("---" for _ in df.columns) + "|"]
     out += ["| " + " | ".join(r) + " |" for r in rows]
     return "\n".join(out)
