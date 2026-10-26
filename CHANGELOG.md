@@ -10,4 +10,4 @@
 - Common MODIS/VIIRS schema with local solar time; 5-day date chunking on a fixed grid.
 - Parquet cache with atomic writes and partial-chunk handling; DuckDB store with tile de-dupe.
 - Resumable ingest, `scripts/prefetch.py` (dry run), SYNTHETIC generator and `scripts/make_synthetic.py`.
-- Found and handled live API limits: day range 1-5, rows-based transaction billing.
+- Found and handled live API limits: day range 1-5, 2 transactions per requested day.
