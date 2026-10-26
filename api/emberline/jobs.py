@@ -226,6 +226,11 @@ class JobManager:
             if client is None:
                 if tolerable:
                     return  # the pipeline reports the gaps; nothing more can be done offline
+                if self._factory is not None:  # downloading is possible, just not for this request
+                    raise AnalysisError(
+                        f"Data for {', '.join(gaps)} is not cached yet for this region and period. "
+                        f"It may still be downloading; scripts/prefetch.py fetches it."
+                    )
                 raise AnalysisError(
                     f"Data for {', '.join(gaps)} is not cached for this region and period, and live "
                     f"download is off (no FIRMS_MAP_KEY). Run scripts/prefetch.py or pick a preset region."
