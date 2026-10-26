@@ -21,6 +21,10 @@ from emberline.data.limiter import RateLimiter
 
 log = logging.getLogger(__name__)
 
+# httpx logs full request URLs at INFO, and the FIRMS MAP_KEY lives in the URL path.
+for _name in ("httpx", "httpcore"):
+    logging.getLogger(_name).setLevel(logging.WARNING)
+
 BASE = "https://firms.modaps.eosdis.nasa.gov"
 STATUS_URL = f"{BASE}/mapserver/mapkey_status/"
 # FIRMS reports some failures as HTTP 200 with a plain-text body.

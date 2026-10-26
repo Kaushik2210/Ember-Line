@@ -101,3 +101,10 @@ async def test_client_error_is_not_retried() -> None:
         with pytest.raises(FirmsError):
             await make(http).area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
     assert route.call_count == 1
+
+
+def test_httpx_request_logging_is_silenced() -> None:
+    import logging
+
+    # URLs contain the MAP_KEY, so httpx must not log them at INFO
+    assert logging.getLogger("httpx").level >= logging.WARNING
