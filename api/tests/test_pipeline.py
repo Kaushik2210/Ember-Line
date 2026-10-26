@@ -181,3 +181,21 @@ def test_stl_is_computed_on_the_harmonised_weekly_series(analysis) -> None:  # t
     assert (
         s["seasonal"].max() - s["seasonal"].min() > 1.0
     )  # clear yearly cycle in the synthetic data
+
+
+def test_polygon_restricts_the_analysis(store) -> None:  # type: ignore[no-untyped-def]
+    import numpy as np
+
+    # the western half of the box only
+    ring = np.array([[74.0, 29.0], [75.5, 29.0], [75.5, 32.0], [74.0, 32.0], [74.0, 29.0]])
+    full = run_analysis(store, BBOX, START, END, synthetic=True)
+    half = run_analysis(store, BBOX, START, END, synthetic=True, rings=[ring])
+    assert 0 < half.counts["raw"] < full.counts["raw"]
+
+
+def test_polygon_with_no_data_is_a_friendly_error(store) -> None:  # type: ignore[no-untyped-def]
+    import numpy as np
+
+    far = np.array([[10.0, 10.0], [11.0, 10.0], [11.0, 11.0], [10.0, 11.0], [10.0, 10.0]])
+    with pytest.raises(AnalysisError, match="inside the uploaded shape"):
+        run_analysis(store, BBOX, START, END, synthetic=True, rings=[far])

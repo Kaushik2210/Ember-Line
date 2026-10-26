@@ -18,6 +18,7 @@ import polars as pl
 from emberline.annotations import Annotation, annotations_for, platform_coverage
 from emberline.data.coverage import load_availability, observed_dates
 from emberline.data.store import HotspotStore
+from emberline.guardrails import points_in_rings
 from emberline.science.anomalies import (
     Event,
     flag_events,
@@ -157,6 +158,7 @@ def run_analysis(
     metric: str = "frp_sum_mw",
     synthetic: bool = False,
     progress: Progress | None = None,
+    rings: list[np.ndarray] | None = None,
 ) -> Analysis:
     policy = policy or QualityPolicy()
     grid = grid or GridSpec()
@@ -168,6 +170,11 @@ def run_analysis(
     df = store.query(bbox, start - timedelta(days=1), end, sources=flat, synthetic=synthetic)
     if df.height == 0:
         raise AnalysisError("No hotspot data is cached for this region and period.")
+    if rings is not None:  # uploaded shape: keep only points inside it
+        inside = points_in_rings(df["latitude"].to_numpy(), df["longitude"].to_numpy(), rings)
+        df = df.filter(pl.Series(inside))
+        if df.height == 0:
+            raise AnalysisError("No hotspot data falls inside the uploaded shape.")
     for sensor in ("modis", "viirs"):
         if df.filter(pl.col("sensor") == sensor).height == 0:
             raise AnalysisError(f"No {sensor.upper()} data is cached for this region and period.")
