@@ -37,7 +37,7 @@ from emberline.schemas import AnalyzeRequest
 from emberline.serialize import result_payload
 
 log = logging.getLogger(__name__)
-CACHE_VERSION = "1"  # bump when the result format or science changes, to invalidate cached results
+CACHE_VERSION = "2"  # bump when the result format or science changes, to invalidate cached results
 
 
 def request_key(req: AnalyzeRequest) -> str:
