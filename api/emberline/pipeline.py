@@ -260,7 +260,7 @@ def _data_notes(
         if (
             isinstance(first_aqua, date)
             and isinstance(first_terra, date)
-            and first_terra < first_aqua
+            and (first_aqua - first_terra).days >= 30  # a real gap, not a quiet first day
         ):
             notes.append(
                 f"MODIS reports from Terra alone before {first_aqua.isoformat()}, with fewer "

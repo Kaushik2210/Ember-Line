@@ -130,3 +130,30 @@ def test_report_renders_every_section_from_computed_numbers(analysis, store) -> 
     assert analysis.norm.chosen in text
     assert "VIIRS / MODIS over all overlap weeks" in text
     assert "nan" not in text.lower().replace("nominal", "")
+
+
+def test_md_does_not_put_separators_in_years() -> None:
+    from emberline.report import md
+
+    t = md(pl.DataFrame({"year": [2012], "weeks": [31], "frp": [1234.5], "n": [12345]}))
+    assert "| 2012 |" in t and "12,345" in t and "1,234.500" in t
+
+
+def test_terra_only_note_needs_a_real_gap() -> None:
+    from emberline.pipeline import _data_notes
+
+    def frame(terra_first: date, aqua_first: date) -> pl.DataFrame:
+        return pl.DataFrame(
+            {
+                "sensor": ["modis", "modis"],
+                "platform": ["Terra", "Aqua"],
+                "local_date": [terra_first, aqua_first],
+            }
+        )
+
+    daily = pl.DataFrame({"local_date": [date(2012, 6, 1)], "modis": [1.0], "viirs": [1.0]})
+    counts = {"persistent_cells": 0}
+    quiet = _data_notes(frame(date(2012, 6, 1), date(2012, 6, 2)), daily, counts, False)
+    assert not any("Terra" in n for n in quiet)
+    real = _data_notes(frame(date(2001, 1, 1), date(2002, 7, 4)), daily, counts, False)
+    assert any("Terra alone before 2002-07-04" in n for n in real)
