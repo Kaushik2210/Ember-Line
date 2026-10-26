@@ -18,12 +18,12 @@ export function Provenance({ result }: { result: ResultPayload }) {
       </p>
       <details className="mt-1">
         <summary className="min-h-6 cursor-pointer text-muted hover:text-ink">Parameters and acknowledgment</summary>
-        <dl className="mt-1.5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+        <dl className="mt-1.5 grid min-w-0 gap-x-6 gap-y-1 sm:grid-cols-2">
           <div><dt className="inline text-muted">Measure: </dt><dd className="num inline">{m.metric}</dd></div>
           <div><dt className="inline text-muted">Grid: </dt><dd className="num inline">{grid ? (grid.kind === "h3" ? `H3 resolution ${grid.h3_res}` : `regular ${grid.size_deg}°`) : "n/a"}</dd></div>
           <div><dt className="inline text-muted">Model: </dt><dd className="num inline">{m.model.chosen ?? "none"}, {m.model.validation}</dd></div>
           <div><dt className="inline text-muted">Interval: </dt><dd className="num inline">{m.model.interval ?? "n/a"}</dd></div>
-          <div className="sm:col-span-2"><dt className="inline text-muted">Quality policy: </dt><dd className="num inline break-words">{policy ? JSON.stringify(policy) : "n/a"}</dd></div>
+          <div className="sm:col-span-2"><dt className="inline text-muted">Quality policy: </dt><dd className="num inline break-all">{policy ? JSON.stringify(policy) : "n/a"}</dd></div>
         </dl>
         <p className="mt-2 leading-relaxed">{m.acknowledgment}</p>
       </details>
