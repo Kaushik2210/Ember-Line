@@ -50,6 +50,8 @@ type Props = {
   buffers: HotspotBuffers | null;
   area: BBox | null;
   drawing: boolean;
+  /** False freezes the map (no pan or zoom) and hides the controls, for decorative use. */
+  interactive?: boolean;
   /** Drawn rectangle as [west, south, east, north]. */
   onDrawEnd?: (b: BBox) => void;
   onPick?: (f: HotspotFeature | null) => void;
@@ -57,7 +59,7 @@ type Props = {
   onMove?: (map: MlMap) => void;
 };
 
-export function SensorMap({ sensor, day, buffers, area, drawing, onDrawEnd, onPick, onReady, onMove }: Props) {
+export function SensorMap({ sensor, day, buffers, area, drawing, interactive = true, onDrawEnd, onPick, onReady, onMove }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -76,9 +78,12 @@ export function SensorMap({ sensor, day, buffers, area, drawing, onDrawEnd, onPi
       attributionControl: { compact: true },
       dragRotate: false,
       pitchWithRotate: false,
+      interactive,
     });
-    map.touchZoomRotate.disableRotation();
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    if (interactive) {
+      map.touchZoomRotate.disableRotation();
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    }
     const overlay = new MapboxOverlay({ interleaved: false, layers: [] });
     map.addControl(overlay as unknown as maplibregl.IControl);
     mapRef.current = map;
