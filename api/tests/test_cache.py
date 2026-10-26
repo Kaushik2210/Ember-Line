@@ -35,3 +35,11 @@ def test_no_temp_files_left(tmp_path: Path) -> None:
     df = normalize_firms_csv((FIX / "modis_sp_sample.csv").read_text(), "MODIS_SP")
     cache.write(df, "MODIS_SP", "t", date(2020, 1, 1))
     assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_partial_chunk_is_not_reported_complete(tmp_path: Path) -> None:
+    cache = ParquetCache(tmp_path)
+    df = normalize_firms_csv((FIX / "modis_sp_sample.csv").read_text(), "MODIS_SP")
+    cache.write(df, "MODIS_SP", "t", date(2026, 7, 31), partial_days=1)
+    assert not cache.has("MODIS_SP", "t", date(2026, 7, 31))
+    assert cache.path("MODIS_SP", "t", date(2026, 7, 31), 1).is_file()

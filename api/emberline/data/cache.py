@@ -24,20 +24,32 @@ class ParquetCache:
     def raw_dir(self) -> Path:
         return self.root / "raw"
 
-    def path(self, source: str, tile_key: str, chunk_start: date) -> Path:
+    def path(
+        self, source: str, tile_key: str, chunk_start: date, partial_days: int | None = None
+    ) -> Path:
+        """Path of a chunk file. `partial_days` marks an incomplete chunk (data still arriving):
+        it gets its own filename, so `has()` never treats it as complete."""
+        suffix = f"~{partial_days}d" if partial_days else ""
         return (
             self.raw_dir
             / f"src={source}"
             / f"tile={tile_key}"
-            / f"chunk={chunk_start.isoformat()}.parquet"
+            / f"chunk={chunk_start.isoformat()}{suffix}.parquet"
         )
 
     def has(self, source: str, tile_key: str, chunk_start: date) -> bool:
         return self.path(source, tile_key, chunk_start).is_file()
 
-    def write(self, df: pl.DataFrame, source: str, tile_key: str, chunk_start: date) -> Path:
+    def write(
+        self,
+        df: pl.DataFrame,
+        source: str,
+        tile_key: str,
+        chunk_start: date,
+        partial_days: int | None = None,
+    ) -> Path:
         """Write atomically so an interrupted run never leaves a half-written file."""
-        target = self.path(source, tile_key, chunk_start)
+        target = self.path(source, tile_key, chunk_start, partial_days)
         target.parent.mkdir(parents=True, exist_ok=True)
         tmp = target.with_suffix(".parquet.tmp")
         df.write_parquet(tmp, compression="zstd")
