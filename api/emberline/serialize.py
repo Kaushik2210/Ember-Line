@@ -148,6 +148,17 @@ def result_payload(a: Analysis) -> dict[str, Any]:
         "seasonality": None,
         "anomalies": {"events": [], "seasons": []},
     }
+    if a.norm_early:
+        e = a.norm_early
+        out["validation"]["normalization_terra_only"] = {
+            "chosen": e.chosen,
+            "cv": records(e.cv),
+            "n_weeks": e.n_weeks,
+            "years": e.years,
+            "interval_halfwidth_log1p": clean(e.q),
+            "level": e.level,
+            "used_before": a.early_cutoff,
+        }
     if a.norm:
         n = a.norm
         out["validation"]["normalization"] = {
@@ -160,6 +171,7 @@ def result_payload(a: Analysis) -> dict[str, Any]:
         }
     if h is not None:
         out["harmonized"] = {
+            "modis_basis": h["modis_basis"].to_list() if "modis_basis" in h.columns else None,
             "dates": clean(h["local_date"]),
             "value": clean(h["harmonized"]),
             "lo": clean(h["lo"]),

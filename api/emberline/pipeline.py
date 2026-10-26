@@ -15,7 +15,12 @@ from datetime import date, timedelta
 import numpy as np
 import polars as pl
 
-from emberline.annotations import Annotation, annotations_for, platform_coverage
+from emberline.annotations import (
+    AQUA_FIRE_START,
+    Annotation,
+    annotations_for,
+    platform_coverage,
+)
 from emberline.data.coverage import load_availability, observed_dates
 from emberline.data.store import HotspotStore
 from emberline.guardrails import points_in_rings
@@ -27,7 +32,12 @@ from emberline.science.anomalies import (
     season_totals,
 )
 from emberline.science.grid import GridSpec, cell_days, daily_series
-from emberline.science.normalize import NormalizationResult, fit_normalizer, harmonize
+from emberline.science.normalize import (
+    NormalizationResult,
+    fit_normalizer,
+    harmonize,
+    harmonize_with_early,
+)
 from emberline.science.overpass import combine_summaries, match_coincident
 from emberline.science.quality import QualityPolicy, apply_quality, persistent_cells
 from emberline.science.seasonality import (
@@ -66,6 +76,8 @@ class Analysis:
     ds: pl.DataFrame  # region daily totals per sensor and day/night, all metrics
     observed: dict[str, list[date]] | None  # downloaded days per sensor (None: synthetic)
     norm: NormalizationResult | None = None
+    norm_early: NormalizationResult | None = None  # Terra-only model for weeks before Aqua
+    early_cutoff: date | None = None
     harmonized: pl.DataFrame | None = None
     climatology: pl.DataFrame | None = None
     markers: SeasonMarkers | None = None
@@ -244,7 +256,7 @@ def run_analysis(
         f"constant factor."
     )
     say("Harmonising the record")
-    a.harmonized = harmonize(daily, a.norm)
+    a.harmonized = _harmonize(a, q, observed, grid, metric, daily, start, end, say)
     rec = a.harmonized.filter(pl.col("reconstructed") & pl.col("harmonized").is_not_null())
     a.notes.append(
         f"{rec.height} of {a.harmonized.height} days are reconstructed from MODIS "
@@ -329,3 +341,47 @@ def _weekly_stl(harmonized: pl.DataFrame) -> pl.DataFrame | None:
         return stl_decompose(w)
     except ValueError:
         return None
+
+
+def _harmonize(
+    a: Analysis,
+    q: pl.DataFrame,
+    observed: dict[str, list[date]] | None,
+    grid: GridSpec,
+    metric: str,
+    daily: pl.DataFrame,
+    start: date,
+    end: date,
+    say: Progress,
+) -> pl.DataFrame:
+    """Harmonise the record; weeks before Aqua use a Terra-only model when the window reaches back."""
+    assert a.norm is not None
+    modis = q.filter(pl.col("sensor") == "modis")
+    terra_only_era = (
+        start < AQUA_FIRE_START and modis.filter(pl.col("platform") == "Terra").height > 0
+    )
+    if not terra_only_era:
+        return harmonize(daily, a.norm)
+
+    say("Calibrating the Terra-only years")
+    terra = q.filter((pl.col("sensor") == "viirs") | (pl.col("platform") == "Terra"))
+    daily_t = calendar_series(
+        daily_series(cell_days(terra, grid)), metric, start, end, observed=observed
+    )
+    try:
+        a.norm_early = fit_normalizer(weekly_pairs(daily_t), metric=metric)
+    except ValueError as exc:
+        a.notes.append(
+            f"Terra-only years are reconstructed with the two-satellite model: no separate Terra-only "
+            f"model could be fitted ({exc}); those years are biased low."
+        )
+        return harmonize(daily, a.norm)
+    a.early_cutoff = AQUA_FIRE_START
+    n = a.norm_early
+    row = n.cv.filter(pl.col("model") == n.chosen).row(0, named=True)
+    a.notes.append(
+        f"Before {AQUA_FIRE_START.isoformat()} only Terra reports, with far fewer detections. Those "
+        f"weeks use a Terra-only model ({n.chosen}, cross-validated error {row['mae_log']:.2f} in log "
+        f"units, intervals about x{np.expm1(n.q) + 1:.1f}) so they are not mistaken for quiet years."
+    )
+    return harmonize_with_early(daily, a.norm, daily_t, n, AQUA_FIRE_START)

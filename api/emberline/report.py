@@ -114,6 +114,14 @@ def report(a: Analysis, name: str, coverage: pl.DataFrame) -> str:
         L.append(
             f"\nInterval half-width in log1p units: {n.q:.3f} at {n.level:.0%} nominal coverage."
         )
+    if a.norm_early:
+        en = a.norm_early
+        L.append(
+            f"\n### Terra-only years (before {a.early_cutoff})\n\nOnly Terra reported, so a separate "
+            f"model is calibrated on Terra's overlap with VIIRS ({en.n_weeks} weeks). Chosen: "
+            f"**{en.chosen}**.\n"
+        )
+        L.append(md(en.cv.drop("selectable")))
     if a.harmonized is not None:
         h = a.harmonized
         rec = h.filter(pl.col("reconstructed") & pl.col("harmonized").is_not_null())

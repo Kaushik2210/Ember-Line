@@ -185,3 +185,45 @@ def test_segments_and_materiality_in_the_analysis(analysis) -> None:  # type: ig
     yearly = float(analysis.harmonized["harmonized"].sum()) / 11
     assert all(abs(e.excess) >= 0.01 * yearly * 0.99 for e in analysis.events)
     assert any("Prediction intervals are about" in n for n in analysis.notes)
+
+
+def test_terra_only_years_use_their_own_model_and_are_not_mistaken_for_quiet_years(
+    tmp_path: Path,
+) -> None:
+    import numpy as np
+
+    from emberline.annotations import AQUA_FIRE_START
+    from emberline.pipeline import run_analysis
+
+    # 2001-2010: Aqua does not exist before its start date, VIIRS flies from 2006. The generator
+    # injects its extreme season in start.year + 3 = 2004, inside the Terra + Aqua era.
+    start, end = date(2001, 1, 1), date(2010, 12, 31)
+    df = generate_synthetic(BBOX, start, end, seed=11)
+    df = df.filter(
+        ~((pl.col("platform") == "Aqua") & (pl.col("local_date") < AQUA_FIRE_START))
+        & ((pl.col("sensor") == "modis") | (pl.col("local_date") >= date(2006, 1, 1)))
+    )
+    write_synthetic(tmp_path, df)
+    a = run_analysis(HotspotStore(tmp_path), BBOX, start, end, synthetic=True)
+
+    assert a.norm_early is not None and a.early_cutoff == AQUA_FIRE_START
+    assert any("Before 2002-07-04 only Terra reports" in n for n in a.notes)
+    h = a.harmonized
+    assert set(h["modis_basis"].unique()) == {"terra", "terra+aqua"}
+    early = h.filter(pl.col("modis_basis") == "terra")
+    assert early["local_date"].max() < date(2002, 7, 15)
+
+    # Calibrated: the Terra-only year 2001 sits at the level of the ordinary Terra+Aqua years
+    # 2005-2006 (2004 is the injected extreme season; VIIRS-observed years excluded: 2006+).
+    def total(year: int) -> float:
+        return float(h.filter(pl.col("local_date").dt.year() == year)["harmonized"].sum())
+
+    ordinary = np.mean([total(2003), total(2005)])
+    assert 0.5 < total(2001) / ordinary < 2.0
+
+    # Uncorrected, the same weeks would read as a much quieter year
+    from emberline.science.normalize import harmonize
+
+    naive = harmonize(a.daily, a.norm)
+    naive_2001 = float(naive.filter(pl.col("local_date").dt.year() == 2001)["harmonized"].sum())
+    assert naive_2001 < 0.75 * total(2001)
