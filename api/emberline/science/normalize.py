@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import numpy as np
@@ -339,3 +339,26 @@ def harmonize(daily: pl.DataFrame, result: NormalizationResult) -> pl.DataFrame:
         pl.col("modis").alias("modis_raw"),
         pl.col("viirs").alias("viirs_raw"),
     )
+
+
+def harmonize_with_early(
+    daily: pl.DataFrame,
+    result: NormalizationResult,
+    daily_early: pl.DataFrame,
+    result_early: NormalizationResult,
+    cutoff: date,
+) -> pl.DataFrame:
+    """Harmonise, using a separate model for the weeks before `cutoff`.
+
+    Before Aqua flew, MODIS fire data come from Terra alone and carry roughly a third of the
+    detections, so the two-satellite model would read those years as unusually quiet.
+    `daily_early` has the same columns as `daily` but with MODIS counted from Terra only, and
+    `result_early` is calibrated on that. `cutoff` is moved to the next Monday so weeks stay whole.
+    Adds `modis_basis`: "terra" for the early weeks, "terra+aqua" afterwards.
+    """
+    cut = cutoff + timedelta(days=(7 - cutoff.weekday()) % 7)
+    late = harmonize(daily, result).with_columns(pl.lit("terra+aqua").alias("modis_basis"))
+    early = harmonize(daily_early, result_early).with_columns(pl.lit("terra").alias("modis_basis"))
+    return pl.concat(
+        [early.filter(pl.col("local_date") < cut), late.filter(pl.col("local_date") >= cut)]
+    ).sort("local_date")

@@ -26,6 +26,11 @@ MODIS_LAND_NEWS = "https://modis-land.gsfc.nasa.gov/news.html"
 C61 = "https://www.earthdata.nasa.gov/data/catalog/lancemodis-mcd14dl-6.1nrt"
 
 
+# NASA: high quality active fire observations from Aqua start 4 July 2002 (FAQ_MODIS).
+# Before this date MODIS fire data come from Terra alone.
+AQUA_FIRE_START = date(2002, 7, 4)
+
+
 @dataclass(frozen=True)
 class Annotation:
     when: str  # ISO date, "YYYY-MM", "YYYY" or "undated"
