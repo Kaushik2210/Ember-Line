@@ -18,6 +18,7 @@ from pathlib import Path
 from emberline.config import get_settings
 from emberline.data.cache import ParquetCache
 from emberline.data.chunking import clip_chunk, date_chunks, tiles_for
+from emberline.data.coverage import save_availability
 from emberline.data.firms import Availability, FirmsClient
 from emberline.data.ingest import ingest_source
 from emberline.regions import REGIONS, get_region
@@ -56,6 +57,7 @@ async def run(args: argparse.Namespace) -> None:
 
     async with FirmsClient(settings.firms_map_key, guard_every=8) as client:
         avail = await client.availability()
+        save_availability(cache.root, avail)  # lets analysis run offline later
         status = await client.key_status()
         print(f"FIRMS key status: {status}")
         for src in sources:
@@ -64,12 +66,15 @@ async def run(args: argparse.Namespace) -> None:
                 print(f"  {src}: {a.min_date} .. {a.max_date}")
         total_todo = 0
         for region in regions:
-            start = args.start or date.fromisoformat(region.default_start)
-            end = args.end or date.fromisoformat(region.default_end)
             for src in sources:
                 if src not in avail:
                     print(f"[{region.id}] {src}: not offered by FIRMS, skipping")
                     continue
+                default_start = date.fromisoformat(region.default_start)
+                if src.startswith("MODIS") and args.modis_start:
+                    default_start = args.modis_start  # MODIS-only history, for reconstruction
+                start = args.start or default_start
+                end = args.end or avail[src].max_date
                 todo, done = plan_requests(cache, src, avail[src], region.bbox, start, end, args.tile_deg)
                 total_todo += todo
                 print(f"[{region.id}] {src}: {todo} to fetch, {done} cached")
@@ -99,7 +104,12 @@ def main() -> None:
     ap.add_argument("--sources", nargs="*", default=DEFAULT_SOURCES)
     ap.add_argument("--nrt", action="store_true", help="also fetch near-real-time sources")
     ap.add_argument("--start", type=date.fromisoformat)
-    ap.add_argument("--end", type=date.fromisoformat)
+    ap.add_argument("--end", type=date.fromisoformat, help="default: newest available")
+    ap.add_argument(
+        "--modis-start",
+        type=date.fromisoformat,
+        help="start MODIS earlier than the region default, e.g. 2000-11-01",
+    )
     ap.add_argument("--concurrency", type=int, default=6)
     ap.add_argument("--tile-deg", type=float, default=None, help="grid tiles instead of one bbox")
     ap.add_argument("--max-requests", type=int, default=None, help="cap per region+source")
