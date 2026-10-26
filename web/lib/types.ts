@@ -149,6 +149,7 @@ export interface ResultPayload {
     acknowledgment: string;
     run_utc: string;
     emberline_version: string;
+    metric: Metric;
     sources: { modis: string; viirs: string };
     versions: Record<string, string>;
     model: { chosen: string | null; fitted_on: string; validation: string; interval: string | null };
