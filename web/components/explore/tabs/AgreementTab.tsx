@@ -60,7 +60,7 @@ export function AgreementTab({ result }: { result: ResultPayload }) {
     return (
       <div className="min-w-0">
         <h4 className="mb-1 text-xs font-medium text-muted">{title}</h4>
-        <Chart option={opt} height={170} label={`${title}: share of detections the other sensor also saw.`} />
+        <Chart option={opt} height={170} filename={`emberline-overpass-${key}`} label={`${title}: share of detections the other sensor also saw.`} />
       </div>
     );
   };
@@ -80,8 +80,8 @@ export function AgreementTab({ result }: { result: ResultPayload }) {
               Each dot is one week. On the right, every week is predicted by a model that never saw that week&apos;s year (leave-one-year-out), so the improvement is not self-flattery. The dashed line is perfect agreement.
             </p>
             <div className="grid gap-4 md:grid-cols-2">
-              <Chart option={scatter(norm.pairs, "before")} height={240} label="Weekly MODIS against weekly VIIRS before normalising, on log axes." />
-              <Chart option={scatter(norm.pairs, "after")} height={240} label="Weekly normalised MODIS against weekly VIIRS on held-out years, on log axes." />
+              <Chart option={scatter(norm.pairs, "before")} height={240} filename="emberline-agreement-before" label="Weekly MODIS against weekly VIIRS before normalising, on log axes." />
+              <Chart option={scatter(norm.pairs, "after")} height={240} filename="emberline-agreement-after" label="Weekly normalised MODIS against weekly VIIRS on held-out years, on log axes." />
             </div>
             {raw && best && (
               <div className="mt-3 overflow-x-auto">

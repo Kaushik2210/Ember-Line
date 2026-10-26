@@ -5,6 +5,9 @@ import { COLS, cellOfDate, dateOfCell, reconstructedShare, scaleMax, valueColor 
 import { formatDay } from "@/lib/day";
 import type { Matrix, ResultPayload } from "@/lib/types";
 import { type CalendarView, useExploreParams } from "@/lib/urlState";
+import { ImageDown } from "lucide-react";
+import { CREDIT, canvasToPng, saveFile } from "@/lib/download";
+import { Button } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Segmented";
 import { useChartColors } from "@/lib/chartTheme";
 
@@ -152,7 +155,12 @@ export function CalendarTab({ result }: { result: ResultPayload }) {
             onChange={(v) => void setP({ view: v })}
           />
         </div>
-        <Legend max={Math.expm1(logMax)} unit={unit} />
+        <div className="flex items-center gap-3">
+          <Legend max={Math.expm1(logMax)} unit={unit} />
+          <Button size="sm" variant="ghost" aria-label="Save calendar as PNG" onClick={() => canvas.current && saveFile(canvasToPng(canvas.current, c.panel, CREDIT), `emberline-calendar-${view}.png`)}>
+            <ImageDown aria-hidden className="size-4" />
+          </Button>
+        </div>
       </div>
 
       <div ref={wrap} className="relative overflow-x-auto">

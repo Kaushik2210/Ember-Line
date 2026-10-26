@@ -82,7 +82,7 @@ export function AnomaliesTab({ result }: { result: ResultPayload }) {
       <div className="flex min-w-0 flex-col gap-4">
         <div>
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Timeline</h3>
-          <Chart option={timeline} height={200} label="Daily harmonized activity over the whole record, with unusually high periods shaded red and unusually low periods shaded blue." />
+          <Chart option={timeline} height={200} filename="emberline-unusual-periods" label="Daily harmonized activity over the whole record, with unusually high periods shaded red and unusually low periods shaded blue." />
           <p className="mt-1 text-xs text-faint">
             <span style={{ color: c.hot }}>Red</span> is unusually active and <span style={{ color: c.cool }}>blue</span> unusually quiet for that time of year. Each year is compared with the others, never with itself.
           </p>
@@ -90,7 +90,7 @@ export function AnomaliesTab({ result }: { result: ResultPayload }) {
         {seasonBars && (
           <div>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Most unusual seasons</h3>
-            <Chart option={seasonBars} height={Math.min(8, seasons.length) * 24 + 40} label="Fire seasons ranked by how far their total is from the other years." />
+            <Chart option={seasonBars} height={Math.min(8, seasons.length) * 24 + 40} filename="emberline-unusual-seasons" label="Fire seasons ranked by how far their total is from the other years." />
           </div>
         )}
       </div>

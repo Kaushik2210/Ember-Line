@@ -149,12 +149,13 @@ export function SeasonalityTab({ result }: { result: ResultPayload }) {
         <Chart
           option={option}
           height={260}
+          filename={`emberline-seasonality-${year}`}
           label={`Typical seasonal cycle of harmonized activity with the 10th to 90th percentile range, and the year ${year} overlaid.`}
         />
         {stlOption && (
           <details className="mt-3">
             <summary className="min-h-9 cursor-pointer text-xs font-medium text-muted hover:text-ink">Long-term trend and seasonal component (STL)</summary>
-            <Chart option={stlOption} height={180} label="STL decomposition: weekly trend and seasonal component on a log scale." />
+            <Chart option={stlOption} height={180} filename="emberline-stl" label="STL decomposition: weekly trend and seasonal component on a log scale." />
           </details>
         )}
       </div>
