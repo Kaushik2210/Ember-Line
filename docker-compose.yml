@@ -1,0 +1,22 @@
+services:
+  api:
+    build: ./api
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      WEB_ORIGIN: http://localhost:3000
+    volumes:
+      - emberline-data:/data
+    ports:
+      - "8000:8000"
+  web:
+    build: ./web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  emberline-data:
