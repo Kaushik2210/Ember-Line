@@ -44,6 +44,11 @@ class RateLimiter:
                     return
                 await self._sleep(self.window_s - (now - self._calls[0]))
 
+    def charge(self, units: int) -> None:
+        """Record extra budget used by a call already made (e.g. FIRMS bills ~1 per 1000 rows)."""
+        now = self._clock()
+        self._calls.extend([now] * max(0, units))
+
     @property
     def in_window(self) -> int:
         self._drop_expired(self._clock())

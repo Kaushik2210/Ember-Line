@@ -47,3 +47,13 @@ async def test_window_slides() -> None:
 def test_rejects_bad_limit() -> None:
     with pytest.raises(ValueError):
         RateLimiter(0)
+
+
+async def test_charge_counts_against_budget() -> None:
+    t = FakeTime()
+    lim = RateLimiter(5, 10, t.clock, t.sleep)
+    await lim.acquire()
+    lim.charge(4)  # e.g. a 5000-row response billed as 5 transactions
+    assert lim.in_window == 5
+    await lim.acquire()  # budget full: must wait for the window
+    assert t.slept == [pytest.approx(10.0)]
