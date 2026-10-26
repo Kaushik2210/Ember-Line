@@ -13,10 +13,16 @@ import logging
 import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 from emberline import __version__
+from emberline.data.cache import ParquetCache
+from emberline.data.chunking import snap_bbox
+from emberline.data.coverage import load_availability, observed_dates, save_availability
+from emberline.data.firms import Availability, FirmsClient, FirmsError
+from emberline.data.ingest import ingest_source, plan_missing
 from emberline.data.store import HotspotStore
 from emberline.guardrails import (
     GuardrailError,
@@ -25,7 +31,7 @@ from emberline.guardrails import (
     check_period,
     geometry_from_geojson,
 )
-from emberline.pipeline import AnalysisError, run_analysis
+from emberline.pipeline import REAL_SOURCES, AnalysisError, run_analysis
 from emberline.regions import get_region
 from emberline.schemas import AnalyzeRequest
 from emberline.serialize import result_payload
@@ -87,8 +93,17 @@ class Job:
 
 
 class JobManager:
-    def __init__(self, store: HotspotStore, results_dir: Path, max_kept: int = 200) -> None:
+    def __init__(
+        self,
+        store: HotspotStore,
+        results_dir: Path,
+        max_kept: int = 200,
+        firms_factory: Callable[[], FirmsClient] | None = None,
+        max_fetch_requests: int = 300,
+    ) -> None:
         self.store = store
+        self._factory = firms_factory
+        self._max_fetch = max_fetch_requests
         self.results_dir = Path(results_dir)
         self.jobs: dict[str, Job] = {}
         self._max_kept = max_kept
@@ -142,6 +157,8 @@ class JobManager:
             job.status = "running"
             await job.emit("Starting analysis")
             try:
+                if not req.synthetic:
+                    await self._ensure_data(job, bbox, req)
                 analysis = await asyncio.to_thread(
                     run_analysis,
                     self.store,
@@ -164,6 +181,75 @@ class JobManager:
             except Exception:  # unexpected: log everything, show nothing internal
                 log.exception("analysis %s failed", job.id)
                 await job.finish("error", "The analysis failed unexpectedly. Please try again.")
+
+    async def _ensure_data(self, job: Job, bbox: Any, req: AnalyzeRequest) -> None:
+        """Download what is missing for this region and period, within hard request limits.
+
+        What is missing is judged from the days actually on disk, so a box inside a cached preset
+        needs nothing. A new area is fetched on a half-degree-snapped box so nearby boxes share it."""
+        root = self.store.root
+        client = self._factory() if self._factory else None
+        try:
+            if client is not None:
+                live = await client.availability()
+                save_availability(root, live)
+                avail = {k: (v.min_date, v.max_date) for k, v in live.items()}
+            else:
+                avail = load_availability(root)
+            gaps: list[str] = []
+            for sources in REAL_SOURCES.values():
+                for src in sources:
+                    if src not in avail:
+                        continue
+                    lo, hi = max(req.start, avail[src][0]), min(req.end, avail[src][1])
+                    need = {date.fromordinal(lo.toordinal() + i) for i in range((hi - lo).days + 1)}
+                    if need - set(observed_dates(root, src, bbox, avail)):
+                        gaps.append(src)
+            if not gaps:
+                return
+            if client is None:
+                raise AnalysisError(
+                    f"Data for {', '.join(gaps)} is not cached for this region and period, and live "
+                    f"download is off (no FIRMS_MAP_KEY). Run scripts/prefetch.py or pick a preset region."
+                )
+            cache = ParquetCache(root)
+            snapped = snap_bbox(bbox)
+            plans = {
+                s: plan_missing(cache, s, Availability(s, *avail[s]), snapped, req.start, req.end)[
+                    0
+                ]
+                for s in gaps
+            }
+            total = sum(plans.values())
+            if total > self._max_fetch:
+                raise AnalysisError(
+                    f"This area is not cached and fetching it needs {total} FIRMS requests (limit "
+                    f"{self._max_fetch}). Choose a preset region or a shorter period."
+                )
+            loop = asyncio.get_running_loop()
+            done = 0
+
+            def on_progress(msg: str) -> None:
+                nonlocal done
+                done += 1
+                loop.create_task(job.emit(f"{msg} ({done}/{total})"))
+
+            for src in gaps:
+                await ingest_source(
+                    client,
+                    cache,
+                    src,
+                    Availability(src, *avail[src]),
+                    snapped,
+                    req.start,
+                    req.end,
+                    on_progress=on_progress,
+                )
+        except FirmsError as exc:
+            raise AnalysisError(f"Could not download data from NASA FIRMS: {exc}") from exc
+        finally:
+            if client is not None:
+                await client.aclose()
 
     def _save(self, job: Job) -> None:
         self.results_dir.mkdir(parents=True, exist_ok=True)
