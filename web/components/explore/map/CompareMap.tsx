@@ -1,14 +1,21 @@
 "use client";
 
 import type { Map as MlMap } from "maplibre-gl";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useImperativeHandle, useMemo, useRef } from "react";
 import { imageryFor } from "@/lib/gibs";
 import { toBuffers } from "@/lib/hotspotBuffers";
+import { composeMapImage } from "@/lib/mapExport";
 import { useExploreStore } from "@/lib/store";
 import type { BBox, HotspotCollection, HotspotFeature } from "@/lib/types";
 import { SensorMap } from "./SensorMap";
 
+export interface CompareHandle {
+  /** PNG data URL of the current view, hotspots and labels included. */
+  exportCanvas: (dayLabel: string) => Promise<HTMLCanvasElement | null>;
+}
+
 type Props = {
+  handleRef?: React.Ref<CompareHandle>;
   mode: "compare" | "overlay";
   day: string | null;
   hotspots: HotspotCollection | undefined;
@@ -25,7 +32,7 @@ type Props = {
  * (the top map is clipped, so each side of the divider shows one sensor). In overlay mode a single
  * map shows both sensors together.
  */
-export function CompareMap({ mode, day, hotspots, showModis, showViirs, area, drawing, onDrawEnd, onPick }: Props) {
+export function CompareMap({ handleRef, mode, day, hotspots, showModis, showViirs, area, drawing, onDrawEnd, onPick }: Props) {
   const slider = useExploreStore((s) => s.slider);
   const setSlider = useExploreStore((s) => s.setSlider);
   const box = useRef<HTMLDivElement>(null);
@@ -57,6 +64,26 @@ export function CompareMap({ mode, day, hotspots, showModis, showViirs, area, dr
     const r = box.current?.getBoundingClientRect();
     if (r) setSlider((clientX - r.left) / r.width);
   };
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      exportCanvas: async (dayLabel: string) => {
+        const right = maps.current.b;
+        if (!right) return null;
+        return composeMapImage({
+          mode,
+          left: maps.current.a ?? null,
+          right,
+          leftBuffers: modisBuf,
+          rightBuffers: mode === "compare" ? viirsBuf : bothBuf,
+          slider,
+          dayLabel,
+        });
+      },
+    }),
+    [mode, modisBuf, viirsBuf, bothBuf, slider],
+  );
 
   const viirsImagery = imageryFor("viirs", day);
   const compare = mode === "compare";

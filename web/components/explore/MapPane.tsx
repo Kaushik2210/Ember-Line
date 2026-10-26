@@ -3,7 +3,11 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ImageDown } from "lucide-react";
+import { CREDIT, canvasToPng, saveFile } from "@/lib/download";
+import { formatDay } from "@/lib/day";
+import type { CompareHandle } from "./map/CompareMap";
 import { getHotspots } from "@/lib/api";
 import { resolveArea, resolvePeriod, useRegions, useResult } from "@/lib/analysis";
 import { clampDay, defaultDay } from "@/lib/day";
@@ -28,6 +32,12 @@ export function MapPane() {
   const result = useResult();
   const [mode, setMode] = useState<"compare" | "overlay">("compare");
   const [picked, setPicked] = useState<HotspotFeature | null>(null);
+  const mapHandle = useRef<CompareHandle>(null);
+
+  const savePng = async () => {
+    const canvas = await mapHandle.current?.exportCanvas(day ? formatDay(day) : "");
+    if (canvas) saveFile(canvasToPng(canvas, "#0b0f14", CREDIT), `emberline-map-${day ?? "view"}.png`);
+  };
 
   const area = resolveArea(p, regions, geojson);
   const { start, end } = resolvePeriod(p, area.region);
@@ -53,6 +63,7 @@ export function MapPane() {
     <section aria-label="Map" className="relative grid min-h-0 grid-rows-[minmax(0,1fr)_auto]">
       <div className="relative min-h-0 overflow-hidden">
         <CompareMap
+          handleRef={mapHandle}
           mode={drawing ? "overlay" : mode}
           day={day}
           hotspots={hotspots.data}
@@ -69,7 +80,8 @@ export function MapPane() {
         />
 
         <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex justify-center">
-          <div className="pointer-events-auto w-56">
+          <div className="pointer-events-auto flex items-center gap-1.5">
+            <div className="w-56">
             <Segmented
               label="Map mode"
               value={mode}
@@ -80,6 +92,16 @@ export function MapPane() {
               onChange={setMode}
               className="bg-panel/90 backdrop-blur"
             />
+            </div>
+            <button
+              type="button"
+              onClick={() => void savePng()}
+              aria-label="Save map as PNG"
+              title="Save map as PNG"
+              className="grid size-9 place-items-center rounded-lg border border-line bg-panel/90 text-muted backdrop-blur hover:text-ink pointer-coarse:size-11"
+            >
+              <ImageDown aria-hidden className="size-4" />
+            </button>
           </div>
         </div>
 
