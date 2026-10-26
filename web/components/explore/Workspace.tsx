@@ -9,6 +9,7 @@ import { useExploreParams } from "@/lib/urlState";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
 import { AnalyticsDock } from "./AnalyticsDock";
+import { ExportMenu } from "./ExportMenu";
 import { LeftRail } from "./LeftRail";
 import { MapPane } from "./MapPane";
 import { ThemeToggle } from "./ThemeToggle";
@@ -77,6 +78,7 @@ export function Workspace() {
               <Info aria-hidden className="size-4" />
               <span className="hidden sm:inline">Why they differ</span>
             </Button>
+            <ExportMenu ready={!!result.data} />
             <Button variant="ghost" size="sm" onClick={() => void share()} aria-live="polite">
               <Share2 aria-hidden className="size-4" />
               <span className="hidden sm:inline">{copied ? "Link copied" : "Share"}</span>
