@@ -57,13 +57,13 @@ export function Workspace() {
   };
 
   return (
-    <div className="grid h-dvh grid-rows-[auto_minmax(0,1fr)] bg-bg text-ink">
+    <div className="flex h-dvh flex-col bg-bg text-ink">
       {result.data?.synthetic && (
         <div role="status" className="bg-hot px-4 py-1 text-center text-xs font-semibold text-white">
           SYNTHETIC DATA: generated for development, not real observations
         </div>
       )}
-      <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)]">
         <header className="flex min-h-12 items-center gap-2 border-b border-line bg-panel px-3 sm:px-4">
           <Button variant="ghost" size="sm" className="lg:hidden" aria-label="Open controls" onClick={() => setControlsOpen(true)}>
             <Menu aria-hidden className="size-4" />
