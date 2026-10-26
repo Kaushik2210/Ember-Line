@@ -24,6 +24,8 @@ class QualityPolicy(BaseModel):
     persistent_mask: bool = True
     persistent_min_frac: float = Field(default=0.10, gt=0, le=1)
     persistent_cell_deg: float = Field(default=0.02, gt=0)
+    # a "fraction of days" is meaningless on a short window: skip the mask below this many days
+    persistent_min_record_days: int = Field(default=365, ge=1)
     daynight: Literal["both", "D", "N"] = "both"
 
 
@@ -35,16 +37,23 @@ def _cell_expr(cell_deg: float) -> list[pl.Expr]:
 
 
 def persistent_cells(
-    df: pl.DataFrame, cell_deg: float = 0.02, min_frac: float = 0.10
+    df: pl.DataFrame,
+    cell_deg: float = 0.02,
+    min_frac: float = 0.10,
+    min_record_days: int = 365,
 ) -> pl.DataFrame:
     """Cells (cx, cy) with detections on more than `min_frac` of the observed days.
 
+    Needs at least `min_record_days` distinct days, otherwise returns no cells.
     The denominator is the number of distinct local dates with any detection in `df`, so the
     threshold means the same thing for a short or a long record.
     """
     if df.height == 0:
         return pl.DataFrame(schema={"cx": pl.Int64, "cy": pl.Int64})
     total_days = df["local_date"].n_unique()
+    if total_days < min_record_days:
+        # too short to tell a flare from a field that burned on a few consecutive days
+        return pl.DataFrame(schema={"cx": pl.Int64, "cy": pl.Int64})
     return (
         df.with_columns(_cell_expr(cell_deg))
         .group_by("cx", "cy")
@@ -74,7 +83,12 @@ def apply_quality(
         out = out.filter(pl.col("daynight") == policy.daynight)
     if policy.persistent_mask:
         if mask is None:
-            mask = persistent_cells(df, policy.persistent_cell_deg, policy.persistent_min_frac)
+            mask = persistent_cells(
+                df,
+                policy.persistent_cell_deg,
+                policy.persistent_min_frac,
+                policy.persistent_min_record_days,
+            )
         if mask.height:
             out = (
                 out.with_columns(_cell_expr(policy.persistent_cell_deg))

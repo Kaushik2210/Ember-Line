@@ -78,14 +78,14 @@ def _flare_and_fires() -> pl.DataFrame:
 
 def test_persistent_mask_finds_the_flare_only() -> None:
     df = _flare_and_fires()
-    m = persistent_cells(df, cell_deg=0.02, min_frac=0.10)
+    m = persistent_cells(df, cell_deg=0.02, min_frac=0.10, min_record_days=30)
     assert m.height == 1
     assert m["cx"][0] == math.floor(76.0 / 0.02) and m["cy"][0] == math.floor(31.0 / 0.02)
 
 
 def test_apply_quality_removes_persistent_source() -> None:
     df = _flare_and_fires()
-    out = apply_quality(df, QualityPolicy())
+    out = apply_quality(df, QualityPolicy(persistent_min_record_days=30))
     assert out.height == 10
     assert (out["latitude"] < 31.0).all()
     assert apply_quality(df, QualityPolicy(persistent_mask=False)).height == 110
@@ -100,3 +100,9 @@ def test_empty_input() -> None:
 def test_dates_cover_expected_span() -> None:
     df = _flare_and_fires()
     assert df["local_date"].min() == date(2020, 1, 1)
+
+
+def test_short_record_does_not_build_a_mask() -> None:
+    df = _flare_and_fires()  # 100 days, below the 365-day default
+    assert persistent_cells(df).height == 0
+    assert apply_quality(df, QualityPolicy()).height == 110  # nothing masked
