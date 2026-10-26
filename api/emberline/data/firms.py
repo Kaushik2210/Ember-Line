@@ -10,6 +10,7 @@ import asyncio
 import csv
 import io
 import logging
+import math
 import random
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -62,6 +63,8 @@ class FirmsClient:
         http: httpx.AsyncClient | None = None,
         limiter: RateLimiter | None = None,
         max_retries: int = 5,
+        rate_limit_wait_s: float = 60.0,
+        max_rate_limit_waits: int = 15,
         base_delay_s: float = 2.0,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     ) -> None:
@@ -70,8 +73,10 @@ class FirmsClient:
         self._key = map_key
         self._http = http or httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0))
         self._owns_http = http is None
-        self._limiter = limiter or RateLimiter(max_calls=4000)
+        self._limiter = limiter or RateLimiter(max_calls=4500)
         self._max_retries = max_retries
+        self._rl_wait = rate_limit_wait_s
+        self._rl_waits = max_rate_limit_waits
         self._base_delay = base_delay_s
         self._sleep = sleep
         self.requests_made = 0
@@ -91,7 +96,9 @@ class FirmsClient:
 
     async def _get_text(self, url: str, params: dict[str, str] | None = None) -> str:
         last: str = ""
-        for attempt in range(self._max_retries + 1):
+        rl_waits = 0
+        attempt = 0
+        while attempt <= self._max_retries:
             await self._limiter.acquire()
             self.requests_made += 1
             try:
@@ -104,14 +111,21 @@ class FirmsClient:
                     return body
                 if body.startswith("Invalid MAP_KEY"):
                     raise FirmsAuthError("FIRMS rejected the MAP_KEY")
+                if "exceeded your transaction" in body[:200]:
+                    # budget exhausted: wait for the 10-minute window instead of burning retries
+                    rl_waits += 1
+                    if rl_waits > self._rl_waits:
+                        raise FirmsError("FIRMS transaction budget stayed exhausted")
+                    log.warning("FIRMS budget exhausted; waiting %.0fs", self._rl_wait)
+                    await self._sleep(self._rl_wait)
+                    continue
                 last = self._redact(f"HTTP {resp.status_code}: {body[:120]!r}")
                 if resp.status_code not in _RETRYABLE_STATUS and resp.status_code != 200:
                     raise FirmsError(last)
-            if attempt < self._max_retries:
+            attempt += 1
+            if attempt <= self._max_retries:
                 delay = self._base_delay * 2**attempt + random.uniform(0, 0.5)
-                log.warning(
-                    "FIRMS request failed (%s); retry %d in %.1fs", last, attempt + 1, delay
-                )
+                log.warning("FIRMS request failed (%s); retry %d in %.1fs", last, attempt, delay)
                 await self._sleep(delay)
         raise FirmsError(f"FIRMS request failed after {self._max_retries + 1} attempts: {last}")
 
@@ -138,4 +152,7 @@ class FirmsClient:
             raise ValueError(f"FIRMS day range must be 1-{MAX_DAY_RANGE}")
         w, s, e, n = bbox
         url = f"{BASE}/api/area/csv/{self._key}/{source}/{w:g},{s:g},{e:g},{n:g}/{days}/{start.isoformat()}"
-        return await self._get_text(url)
+        text = await self._get_text(url)
+        # FIRMS bills about one transaction per 1000 rows; the call itself already cost one
+        self._limiter.charge(max(0, math.ceil(text.count(chr(10)) / 1000) - 1))
+        return text

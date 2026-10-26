@@ -108,3 +108,43 @@ def test_httpx_request_logging_is_silenced() -> None:
 
     # URLs contain the MAP_KEY, so httpx must not log them at INFO
     assert logging.getLogger("httpx").level >= logging.WARNING
+
+
+@respx.mock
+async def test_budget_exhausted_waits_instead_of_failing() -> None:
+    limit = "MAP_KEY is invalid or your have exceeded your transaction/time limit."
+    respx.get(url__regex=r".*").mock(
+        side_effect=[httpx.Response(200, text=limit)] * 3 + [httpx.Response(200, text="a,b")]
+    )
+    waits: list[float] = []
+
+    async def rec(s: float) -> None:
+        waits.append(s)
+
+    async with httpx.AsyncClient() as http:
+        c = FirmsClient(KEY, http=http, limiter=RateLimiter(100), sleep=rec, max_retries=1)
+        assert await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1) == "a,b"
+    assert waits == [60.0, 60.0, 60.0]
+
+
+@respx.mock
+async def test_budget_stays_exhausted_gives_up() -> None:
+    limit = "MAP_KEY is invalid or your have exceeded your transaction/time limit."
+    respx.get(url__regex=r".*").mock(return_value=httpx.Response(200, text=limit))
+    async with httpx.AsyncClient() as http:
+        c = FirmsClient(
+            KEY, http=http, limiter=RateLimiter(100), sleep=_nosleep, max_rate_limit_waits=2
+        )
+        with pytest.raises(FirmsError):
+            await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
+
+
+@respx.mock
+async def test_big_response_charges_the_limiter() -> None:
+    body = "h\n" + "r\n" * 3500
+    respx.get(url__regex=r".*").mock(return_value=httpx.Response(200, text=body))
+    lim = RateLimiter(100)
+    async with httpx.AsyncClient() as http:
+        c = FirmsClient(KEY, http=http, limiter=lim, sleep=_nosleep)
+        await c.area_csv("MODIS_SP", (0, 0, 1, 1), date(2020, 1, 1), 1)
+    assert lim.in_window == 4  # 1 for the call + 3 extra for ~3.5k rows
