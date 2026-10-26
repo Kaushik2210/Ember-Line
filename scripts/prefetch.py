@@ -22,7 +22,7 @@ from emberline.data.firms import Availability, FirmsClient
 from emberline.data.ingest import ingest_source
 from emberline.regions import REGIONS, get_region
 
-DEFAULT_SOURCES = ["MODIS_SP", "VIIRS_SNPP_SP", "VIIRS_NOAA20_SP"]
+DEFAULT_SOURCES = ["MODIS_SP", "VIIRS_SNPP_SP"]  # add VIIRS_NOAA20_SP via --sources if wanted
 NRT_FOR = {
     "MODIS_SP": "MODIS_NRT",
     "VIIRS_SNPP_SP": "VIIRS_SNPP_NRT",
@@ -30,10 +30,12 @@ NRT_FOR = {
 }
 
 
-def plan_requests(cache: ParquetCache, source: str, av: Availability, bbox, start, end) -> tuple[int, int]:
+def plan_requests(
+    cache: ParquetCache, source: str, av: Availability, bbox, start, end, tile_deg=None
+) -> tuple[int, int]:
     """(to_fetch, already_cached) for a source, mirroring ingest_source's logic."""
     todo = done = 0
-    for tile in tiles_for(bbox):
+    for tile in tiles_for(bbox, tile_deg):
         for chunk in date_chunks(start, end):
             if clip_chunk(chunk, av.min_date, av.max_date) is None:
                 continue
@@ -68,7 +70,7 @@ async def run(args: argparse.Namespace) -> None:
                 if src not in avail:
                     print(f"[{region.id}] {src}: not offered by FIRMS, skipping")
                     continue
-                todo, done = plan_requests(cache, src, avail[src], region.bbox, start, end)
+                todo, done = plan_requests(cache, src, avail[src], region.bbox, start, end, args.tile_deg)
                 total_todo += todo
                 print(f"[{region.id}] {src}: {todo} to fetch, {done} cached")
                 if args.dry_run or todo == 0:
@@ -82,6 +84,7 @@ async def run(args: argparse.Namespace) -> None:
                     start,
                     end,
                     concurrency=args.concurrency,
+                    tile_deg=args.tile_deg,
                     on_progress=(lambda m: print("   ", m)) if args.verbose else None,
                     max_requests=args.max_requests,
                 )
@@ -97,7 +100,8 @@ def main() -> None:
     ap.add_argument("--nrt", action="store_true", help="also fetch near-real-time sources")
     ap.add_argument("--start", type=date.fromisoformat)
     ap.add_argument("--end", type=date.fromisoformat)
-    ap.add_argument("--concurrency", type=int, default=4)
+    ap.add_argument("--concurrency", type=int, default=6)
+    ap.add_argument("--tile-deg", type=float, default=None, help="grid tiles instead of one bbox")
     ap.add_argument("--max-requests", type=int, default=None, help="cap per region+source")
     ap.add_argument("--data-dir", type=Path)
     ap.add_argument("--dry-run", action="store_true")
