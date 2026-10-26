@@ -15,6 +15,7 @@ from datetime import date, timedelta
 import numpy as np
 import polars as pl
 
+from emberline.annotations import Annotation, annotations_for, platform_coverage
 from emberline.data.coverage import load_availability, observed_dates
 from emberline.data.store import HotspotStore
 from emberline.science.anomalies import (
@@ -72,6 +73,8 @@ class Analysis:
     frp_ratio: dict[str, float] = field(default_factory=dict)
     overpass_tables: dict[str, pl.DataFrame] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    platforms: pl.DataFrame = field(default_factory=pl.DataFrame)  # first/last day per platform
+    annotations: list[Annotation] = field(default_factory=list)  # documented events
 
 
 def _merge_tables(tables: list[pl.DataFrame], key: str) -> pl.DataFrame:
@@ -202,6 +205,8 @@ def run_analysis(
 
     a = Analysis(bbox, start, end, policy, grid, metric, synthetic, counts, daily, ds, observed)
     a.notes += _data_notes(q, daily, counts, synthetic)
+    a.platforms = platform_coverage(df)
+    a.annotations = [] if synthetic else annotations_for(start, end)
 
     a.overpass, a.frp_ratio, a.overpass_tables = _overpass_by_year(q, say)
 

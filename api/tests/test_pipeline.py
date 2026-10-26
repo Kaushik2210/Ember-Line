@@ -157,3 +157,18 @@ def test_terra_only_note_needs_a_real_gap() -> None:
     assert not any("Terra" in n for n in quiet)
     real = _data_notes(frame(date(2001, 1, 1), date(2002, 7, 4)), daily, counts, False)
     assert any("Terra alone before 2002-07-04" in n for n in real)
+
+
+def test_timeline_comes_from_data_and_synthetic_has_no_nasa_events(analysis) -> None:  # type: ignore[no-untyped-def]
+    assert analysis.platforms.height >= 2
+    assert set(analysis.platforms["sensor"]) == {"modis", "viirs"}
+    # synthetic data must not be annotated with real satellite history
+    assert analysis.annotations == []
+
+
+def test_real_run_gets_documented_events(tmp_path: Path) -> None:
+    # real-source naming on tiny hand-made data is not needed: check the selection logic
+    from emberline.annotations import annotations_for
+
+    titles = [e.title for e in annotations_for(date(2012, 1, 1), date(2024, 1, 1))]
+    assert "Terra's last inclination maneuver; orbit drift begins" in titles

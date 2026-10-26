@@ -134,6 +134,14 @@ def report(a: Analysis, name: str, coverage: pl.DataFrame) -> str:
         L.append("\n## 7. Sustained unusual periods\n")
         top = sorted(a.events, key=lambda e: abs(e.mean_z) * e.days, reverse=True)[:8]
         L += [f"- {describe_event(e)}" for e in top]
+    if a.platforms.height:
+        L.append("\n## 8. Data-quality timeline\n")
+        L.append("Platforms present in the loaded data:\n")
+        L.append(md(a.platforms))
+    if a.annotations:
+        L.append("\nDocumented events (NASA sources; undated where the source gives no date):\n")
+        for e in a.annotations:
+            L.append(f"- **{e.when}** {e.title}. {e.detail} [source]({e.source})")
     L.append("\n## Notes\n")
     L += [f"- {x}" for x in a.notes]
     return "\n".join(L) + "\n"
