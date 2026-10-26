@@ -52,7 +52,7 @@ export default function AboutPage() {
               <p className="mt-1 text-sm leading-relaxed text-muted">{s.what}</p>
               <p className="mt-2 text-xs text-faint">
                 {s.via} ·{" "}
-                <a href={s.href} target="_blank" rel="noopener noreferrer" className="text-viirs hover:underline">
+                <a href={s.href} target="_blank" rel="noopener noreferrer" className="text-viirs underline underline-offset-2 hover:decoration-2">
                   Product description
                 </a>
               </p>

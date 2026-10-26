@@ -32,7 +32,7 @@ function Timeline({ platforms, annotations }: { platforms: PlatformRow[]; annota
   const color = (sensor: string) => (sensor === "modis" ? c.modis : c.viirs);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Data coverage timeline, scrolls sideways">
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Timeline of when each satellite contributes data, with documented events marked." className="min-w-[560px]">
         {years.map((yr) => (
           <g key={yr}>
@@ -124,7 +124,7 @@ export function QualityTab({ result }: { result: ResultPayload }) {
                 <span className="num text-faint">{a.when}</span> · {a.title}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted">{a.detail}</p>
-              <a href={a.source} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-6 items-center gap-1 text-xs text-viirs hover:underline">
+              <a href={a.source} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-6 items-center gap-1 text-xs text-viirs underline underline-offset-2">
                 Source <ExternalLink aria-hidden className="size-3" />
               </a>
             </li>

@@ -77,16 +77,15 @@ export function Landing() {
           <div className="mt-12 max-w-4xl" aria-live="polite">
             {stats.length > 0 && entry && f ? (
               <>
-                <dl className="grid gap-3 sm:grid-cols-3">
+                <ul className="grid gap-3 sm:grid-cols-3">
                   {stats.map((s) => (
-                    <div key={s.label} className="rounded-xl border border-line bg-panel/80 p-4 backdrop-blur">
-                      <dt className="sr-only">{s.label}</dt>
-                      <dd className="num text-2xl font-semibold text-ink sm:text-3xl">{s.value}</dd>
+                    <li key={s.label} className="rounded-xl border border-line bg-panel/80 p-4 backdrop-blur">
+                      <p className="num text-2xl font-semibold text-ink sm:text-3xl">{s.value}</p>
                       <p className="mt-1 text-sm text-ink">{s.label}</p>
                       <p className="mt-2 text-xs leading-relaxed text-faint">{s.detail}</p>
-                    </div>
+                    </li>
                   ))}
-                </dl>
+                </ul>
                 <p className="mt-3 text-xs text-faint">
                   Computed from NASA FIRMS data for {entry.name}
                   {f.years ? `, ${f.years[0]} to ${f.years[1]}` : ""}

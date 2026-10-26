@@ -31,7 +31,8 @@ export function Chart({ option, height = 240, label, filename, onClick }: Props)
   };
 
   return (
-    <div role="img" aria-label={label} className="group relative">
+    <div className="group relative">
+      <div role="img" aria-label={label}>
       <ReactEChartsCore
         ref={ref}
         echarts={echarts}
@@ -42,6 +43,7 @@ export function Chart({ option, height = 240, label, filename, onClick }: Props)
         opts={{ renderer: "canvas" }}
         onEvents={onClick ? { click: onClick } : undefined}
       />
+      </div>
       {filename && (
         <button
           type="button"
