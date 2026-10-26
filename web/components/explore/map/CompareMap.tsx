@@ -125,10 +125,10 @@ export function CompareMap({ handleRef, mode, day, hotspots, showModis, showViir
 
       {compare && (
         <>
-          <div aria-hidden className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-modis backdrop-blur">
+          <div aria-hidden className="pointer-events-none absolute left-3 top-[4.5rem] rounded-md sm:top-3 bg-black/55 px-2 py-1 text-xs font-medium text-modis backdrop-blur">
             MODIS
           </div>
-          <div aria-hidden className="pointer-events-none absolute right-14 top-3 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-viirs backdrop-blur">
+          <div aria-hidden className="pointer-events-none absolute right-14 top-[4.5rem] rounded-md sm:top-3 bg-black/55 px-2 py-1 text-xs font-medium text-viirs backdrop-blur">
             VIIRS{viirsImagery.fallback ? " · Terra imagery" : ""}
           </div>
           <div

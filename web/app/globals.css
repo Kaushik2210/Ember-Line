@@ -10,7 +10,7 @@
   --border-strong: rgba(255, 255, 255, 0.16);
   --text: #e8edf3;
   --text-muted: #9aa7b5;
-  --text-faint: #6b7886;
+  --text-faint: #8995a4;
   --focus: #8ab4ff;
 
   /* sensor roles (Okabe-Ito safe) */
@@ -105,4 +105,13 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* MapLibre's attribution defaults to dark text on a light chip, which disappears over the dark hero. */
+.maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  color: var(--text-muted);
+}
+.maplibregl-map .maplibregl-ctrl-attrib a {
+  color: inherit;
 }

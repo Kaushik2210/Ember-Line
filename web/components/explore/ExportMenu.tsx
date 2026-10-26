@@ -32,7 +32,7 @@ export function ExportMenu({ ready }: { ready: boolean }) {
 
   return (
     <div ref={box} className="relative">
-      <Button variant="ghost" size="sm" disabled={!ready || !job} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <Button variant="ghost" size="sm" aria-label="Export" disabled={!ready || !job} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Download aria-hidden className="size-4" />
         <span className="hidden sm:inline">Export</span>
       </Button>

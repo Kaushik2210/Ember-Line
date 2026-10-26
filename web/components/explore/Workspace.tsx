@@ -63,7 +63,7 @@ export function Workspace() {
           SYNTHETIC DATA: generated for development, not real observations
         </div>
       )}
-      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)]">
         <header className="flex min-h-12 items-center gap-2 border-b border-line bg-panel px-3 sm:px-4">
           <Button variant="ghost" size="sm" className="lg:hidden" aria-label="Open controls" onClick={() => setControlsOpen(true)}>
             <Menu aria-hidden className="size-4" />
@@ -72,14 +72,14 @@ export function Workspace() {
             EMBERLINE
           </Link>
           <span aria-hidden className="text-faint">/</span>
-          <h1 className="truncate text-sm text-muted">{area.name}</h1>
-          <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setWhyOpen(true)}>
+          <h1 className="min-w-0 flex-1 truncate text-sm text-muted sm:flex-none">{area.name}</h1>
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="sm" aria-label="Why they differ" onClick={() => setWhyOpen(true)}>
               <Info aria-hidden className="size-4" />
               <span className="hidden sm:inline">Why they differ</span>
             </Button>
             <ExportMenu ready={!!result.data} />
-            <Button variant="ghost" size="sm" onClick={() => void share()} aria-live="polite">
+            <Button variant="ghost" size="sm" aria-label={copied ? "Link copied" : "Share"} onClick={() => void share()} aria-live="polite">
               <Share2 aria-hidden className="size-4" />
               <span className="hidden sm:inline">{copied ? "Link copied" : "Share"}</span>
             </Button>
@@ -91,7 +91,7 @@ export function Workspace() {
           <div className="hidden min-h-0 border-r border-line lg:block">
             <LeftRail searchRef={searchRef} />
           </div>
-          <main className="grid min-h-0 grid-rows-[minmax(220px,1fr)_auto]">
+          <main className="grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(220px,1fr)_auto]">
             <MapPane />
             <AnalyticsDock />
           </main>

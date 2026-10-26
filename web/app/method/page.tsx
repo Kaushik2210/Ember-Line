@@ -57,7 +57,7 @@ export default function MethodPage() {
           </ul>
         </nav>
 
-        <article>
+        <article className="min-w-0">
           <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">Method</h1>
           <p className="mt-3 max-w-[70ch] text-muted">
             What EMBERLINE computes, with the equations, the choices behind them and what they cannot tell you. Numbers on this page are

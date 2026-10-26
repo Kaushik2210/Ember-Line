@@ -15,7 +15,7 @@ export const ACKNOWLEDGMENT =
 export function SiteHeader({ current, overlay = false }: { current?: string; overlay?: boolean }) {
   return (
     <header className={overlay ? "absolute inset-x-0 top-0 z-20" : "border-b border-line bg-panel"}>
-      <div className="mx-auto flex min-h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex min-h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
         <Link href="/" className="text-sm font-semibold tracking-wide text-ink">
           EMBERLINE
         </Link>
@@ -25,7 +25,7 @@ export function SiteHeader({ current, overlay = false }: { current?: string; ove
               key={n.href}
               href={n.href}
               aria-current={current === n.href ? "page" : undefined}
-              className={`grid min-h-9 place-items-center rounded-lg px-2.5 text-sm pointer-coarse:min-h-11 ${
+              className={`grid min-h-9 place-items-center rounded-lg px-1.5 text-sm sm:px-2.5 pointer-coarse:min-h-11 ${
                 current === n.href ? "bg-raised text-ink" : "text-muted hover:text-ink"
               }`}
             >
