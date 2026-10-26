@@ -131,3 +131,19 @@ async def test_failed_chunk_does_not_stop_the_run(tmp_path: Path) -> None:
         )
     st = out["MODIS_SP"]
     assert st.failed == 1 and st.fetched >= 3
+
+
+@respx.mock
+async def test_plan_missing_matches_what_ingest_does(tmp_path: Path) -> None:
+    from emberline.data.firms import Availability
+    from emberline.data.ingest import plan_missing
+
+    mock_api()
+    cache = ParquetCache(tmp_path)
+    av = Availability("MODIS_SP", date(2000, 11, 1), date(2019, 11, 15))
+    before = plan_missing(cache, "MODIS_SP", av, BBOX, date(2019, 10, 1), date(2019, 10, 30))
+    assert before[0] >= 6 and before[1] == 0
+    async with httpx.AsyncClient() as http:
+        await ingest(client(http), cache, ["MODIS_SP"], BBOX, date(2019, 10, 1), date(2019, 10, 30))
+    after = plan_missing(cache, "MODIS_SP", av, BBOX, date(2019, 10, 1), date(2019, 10, 30))
+    assert after == (0, before[0])

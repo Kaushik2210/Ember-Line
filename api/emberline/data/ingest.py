@@ -111,3 +111,25 @@ async def ingest(
             continue
         out[src] = await ingest_source(client, cache, src, avail[src], bbox, start, end, **kw)  # type: ignore[arg-type]
     return out
+
+
+def plan_missing(
+    cache: ParquetCache,
+    source: str,
+    avail: Availability,
+    bbox: BBox,
+    start: date,
+    end: date,
+    tile_deg: float | None = None,
+) -> tuple[int, int]:
+    """(requests still to make, chunks already cached) for a source: what `ingest_source` would do."""
+    todo = done = 0
+    for tile in tiles_for(bbox, tile_deg):
+        for chunk in date_chunks(start, end):
+            if clip_chunk(chunk, avail.min_date, avail.max_date) is None:
+                continue
+            if cache.has(source, tile.key, chunk.start):
+                done += 1
+            else:
+                todo += 1
+    return todo, done

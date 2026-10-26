@@ -17,10 +17,9 @@ from pathlib import Path
 
 from emberline.config import get_settings
 from emberline.data.cache import ParquetCache
-from emberline.data.chunking import clip_chunk, date_chunks, tiles_for
 from emberline.data.coverage import save_availability
-from emberline.data.firms import Availability, FirmsClient
-from emberline.data.ingest import ingest_source
+from emberline.data.firms import FirmsClient
+from emberline.data.ingest import ingest_source, plan_missing
 from emberline.regions import REGIONS, get_region
 
 DEFAULT_SOURCES = ["MODIS_SP", "VIIRS_SNPP_SP"]  # add VIIRS_NOAA20_SP via --sources if wanted
@@ -29,22 +28,6 @@ NRT_FOR = {
     "VIIRS_SNPP_SP": "VIIRS_SNPP_NRT",
     "VIIRS_NOAA20_SP": "VIIRS_NOAA20_NRT",
 }
-
-
-def plan_requests(
-    cache: ParquetCache, source: str, av: Availability, bbox, start, end, tile_deg=None
-) -> tuple[int, int]:
-    """(to_fetch, already_cached) for a source, mirroring ingest_source's logic."""
-    todo = done = 0
-    for tile in tiles_for(bbox, tile_deg):
-        for chunk in date_chunks(start, end):
-            if clip_chunk(chunk, av.min_date, av.max_date) is None:
-                continue
-            if cache.has(source, tile.key, chunk.start):
-                done += 1
-            else:
-                todo += 1
-    return todo, done
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -75,7 +58,7 @@ async def run(args: argparse.Namespace) -> None:
                     default_start = args.modis_start  # MODIS-only history, for reconstruction
                 start = args.start or default_start
                 end = args.end or avail[src].max_date
-                todo, done = plan_requests(cache, src, avail[src], region.bbox, start, end, args.tile_deg)
+                todo, done = plan_missing(cache, src, avail[src], region.bbox, start, end, args.tile_deg)
                 total_todo += todo
                 print(f"[{region.id}] {src}: {todo} to fetch, {done} cached")
                 if args.dry_run or todo == 0:
