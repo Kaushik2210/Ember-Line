@@ -184,6 +184,7 @@ def result_payload(a: Analysis) -> dict[str, Any]:
         out["seasonality"] = {
             "climatology": {k: clean(c[k]) for k in c.columns},
             "markers": clean(a.markers.__dict__) if a.markers else None,
+            "segments": [clean(m.__dict__) for m in a.segments],
             "stl": ({k: clean(a.stl[k]) for k in a.stl.columns} if a.stl is not None else None),
         }
     out["anomalies"]["events"] = [

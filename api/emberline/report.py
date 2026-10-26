@@ -126,6 +126,14 @@ def report(a: Analysis, name: str, coverage: pl.DataFrame) -> str:
             f"Fire season (10% / 50% / 90% of cumulative activity): day of year "
             f"{m.start_doy} / {m.peak_doy} / {m.end_doy}, about {m.length_days} days long."
         )
+    if len(a.segments) > 1:
+        L.append("\nThis region burns in more than one season:\n")
+        for sg in a.segments:
+            L.append(
+                f"- day of year {sg.start_doy} / {sg.peak_doy} / {sg.end_doy} "
+                f"(about {sg.length_days} days, "
+                f"{sg.total / sum(m.total for m in a.segments):.0%} of seasonal activity)"
+            )
     if a.stl is not None and a.stl.height:
         seas, trend = a.stl["seasonal"].to_numpy(), a.stl["trend"].to_numpy()
         L.append(

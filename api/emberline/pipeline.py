@@ -35,6 +35,7 @@ from emberline.science.seasonality import (
     climatology,
     doy_matrix,
     season_markers,
+    season_segments,
     stl_decompose,
 )
 from emberline.science.series import calendar_series, weekly_pairs
@@ -68,6 +69,7 @@ class Analysis:
     harmonized: pl.DataFrame | None = None
     climatology: pl.DataFrame | None = None
     markers: SeasonMarkers | None = None
+    segments: list[SeasonMarkers] = field(default_factory=list)  # one per burning season
     scores: pl.DataFrame | None = None
     events: list[Event] = field(default_factory=list)
     seasons: pl.DataFrame | None = None
@@ -228,6 +230,19 @@ def run_analysis(
         a.notes.append(f"Normalisation not fitted: {exc}.")
         return a
 
+    cv = {r["model"]: r for r in a.norm.cv.iter_rows(named=True)}
+    chosen, scale = cv[a.norm.chosen], cv["scale"]
+    if chosen["mae_log"] >= 0.98 * scale["mae_log"]:
+        a.notes.append(
+            f"A single multiplicative factor (error {scale['mae_log']:.2f}) does about as well as "
+            f"{a.norm.chosen} ({chosen['mae_log']:.2f}) here, so the extra model complexity is not "
+            f"clearly justified for this region."
+        )
+    a.notes.append(
+        f"Prediction intervals are about x{np.expm1(a.norm.q) + 1:.1f} wide on weekly totals at "
+        f"{a.norm.level:.0%} nominal coverage: the sensors' weekly totals disagree by more than a "
+        f"constant factor."
+    )
     say("Harmonising the record")
     a.harmonized = harmonize(daily, a.norm)
     rec = a.harmonized.filter(pl.col("reconstructed") & pl.col("harmonized").is_not_null())
@@ -241,9 +256,11 @@ def run_analysis(
     if len(years) >= 3:
         a.climatology = climatology(mat)
         a.markers = season_markers(np.nanmedian(mat, axis=0))
+        a.segments = season_segments(np.nanmedian(mat, axis=0))
         a.stl = _weekly_stl(a.harmonized)
         a.scores = loyo_zscores(a.harmonized)
-        a.events = flag_events(a.scores)
+        yearly_total = float(np.nansum(mat)) / len(years)
+        a.events = flag_events(a.scores, min_excess=0.01 * yearly_total)  # >= 1% of a typical year
         try:
             a.seasons = rank_seasons(season_totals(a.harmonized))
         except ValueError as exc:

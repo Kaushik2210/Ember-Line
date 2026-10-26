@@ -178,3 +178,10 @@ def test_polygon_with_no_data_is_a_friendly_error(store) -> None:  # type: ignor
     far = np.array([[10.0, 10.0], [11.0, 10.0], [11.0, 11.0], [10.0, 11.0], [10.0, 10.0]])
     with pytest.raises(AnalysisError, match="inside the uploaded shape"):
         run_analysis(store, BBOX, START, END, synthetic=True, rings=[far])
+
+
+def test_segments_and_materiality_in_the_analysis(analysis) -> None:  # type: ignore[no-untyped-def]
+    assert analysis.segments and analysis.segments[0].total > 0
+    yearly = float(analysis.harmonized["harmonized"].sum()) / 11
+    assert all(abs(e.excess) >= 0.01 * yearly * 0.99 for e in analysis.events)
+    assert any("Prediction intervals are about" in n for n in analysis.notes)
