@@ -52,6 +52,8 @@ type Props = {
   drawing: boolean;
   /** False freezes the map (no pan or zoom) and hides the controls, for decorative use. */
   interactive?: boolean;
+  /** Padding in pixels around the area when framing it; lets a page keep one side of the map free. */
+  framePadding?: maplibregl.PaddingOptions;
   /** Drawn rectangle as [west, south, east, north]. */
   onDrawEnd?: (b: BBox) => void;
   onPick?: (f: HotspotFeature | null) => void;
@@ -59,7 +61,7 @@ type Props = {
   onMove?: (map: MlMap) => void;
 };
 
-export function SensorMap({ sensor, day, buffers, area, drawing, interactive = true, onDrawEnd, onPick, onReady, onMove }: Props) {
+export function SensorMap({ sensor, day, buffers, area, drawing, interactive = true, framePadding, onDrawEnd, onPick, onReady, onMove }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -161,12 +163,12 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     const go = () => {
       (map.getSource("area") as maplibregl.GeoJSONSource | undefined)?.setData(bboxFeature(area));
       if (area) {
-        map.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: 48, duration: prefersReducedMotion() ? 0 : 600 });
+        map.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: framePadding ?? 48, duration: prefersReducedMotion() ? 0 : 600 });
       }
     };
     if (map.isStyleLoaded() && map.getSource("area")) go();
     else map.once("load", go);
-  }, [area]);
+  }, [area, framePadding]);
 
   // drawing a box: drag on the map
   useEffect(() => {

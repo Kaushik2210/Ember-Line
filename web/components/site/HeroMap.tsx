@@ -22,6 +22,12 @@ export function HeroMap({ entry }: { entry: ShowcaseEntry | null }) {
   });
   const buffers = useMemo(() => (hotspots.data ? toBuffers(hotspots.data) : null), [hotspots.data]);
 
+  // keep the region on the right half of wide screens, clear of the headline; below it on narrow ones
+  const padding = useMemo(() => {
+    const w = typeof window === "undefined" ? 1280 : window.innerWidth;
+    return w >= 1024 ? { top: 100, bottom: 210, left: Math.round(w * 0.5), right: 48 } : { top: 140, bottom: 300, left: 24, right: 24 };
+  }, []);
+
   if (!entry || !day) return null;
   return (
     // the points fade out toward the text so the headline stays readable
@@ -29,11 +35,11 @@ export function HeroMap({ entry }: { entry: ShowcaseEntry | null }) {
       aria-hidden
       className="absolute inset-0"
       style={{
-        maskImage: "linear-gradient(90deg, transparent 0%, transparent 30%, black 72%)",
-        WebkitMaskImage: "linear-gradient(90deg, transparent 0%, transparent 30%, black 72%)",
+        maskImage: "linear-gradient(90deg, transparent 0%, transparent 16%, black 52%)",
+        WebkitMaskImage: "linear-gradient(90deg, transparent 0%, transparent 16%, black 52%)",
       }}
     >
-      <SensorMap sensor="viirs" day={day} buffers={buffers} area={entry.bbox} drawing={false} interactive={false} />
+      <SensorMap sensor="viirs" day={day} buffers={buffers} area={entry.bbox} drawing={false} interactive={false} framePadding={padding} />
     </div>
   );
 }
