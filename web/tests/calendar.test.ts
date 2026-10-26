@@ -39,7 +39,7 @@ describe("colour scale", () => {
     expect(valueColor(-3, max)).toBe("#1a222c");
     const low = valueColor(1, max);
     const high = valueColor(100, max);
-    expect(low).toMatch(/^(rgb(|#[0-9a-f]{6})/i);
+    expect(low).toMatch(/^#[0-9a-f]{6}$/i);
     expect(high).not.toBe(low);
     expect(valueColor(1e6, max)).toBe(high); // clamped at the top of the scale
   });
