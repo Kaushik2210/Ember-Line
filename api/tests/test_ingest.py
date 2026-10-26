@@ -86,7 +86,9 @@ async def test_unknown_source_skipped_and_data_queryable(tmp_path: Path) -> None
             client(http), cache, ["MODIS_SP", "NOPE"], BBOX, date(2019, 10, 28), date(2019, 11, 2)
         )
     assert list(out) == ["MODIS_SP"]
-    df = HotspotStore(tmp_path).query(BBOX, date(2019, 11, 1), date(2019, 11, 1))
+    df = HotspotStore(tmp_path).query(
+        (73.0, 28.0, 78.0, 33.0), date(2019, 11, 1), date(2019, 11, 1)
+    )
     assert df.height == 2
 
 
