@@ -208,5 +208,10 @@ export function SensorMap({ sensor, day, buffers, area, drawing, onDrawEnd, onPi
     };
   }, [drawing]);
 
-  return <div ref={el} className="absolute inset-0" data-sensor={sensor} />;
+  // MapLibre sets position: relative on its container, so the sizing wrapper is a separate element
+  return (
+    <div className="absolute inset-0">
+      <div ref={el} className="h-full w-full" data-sensor={sensor} />
+    </div>
+  );
 }
