@@ -91,7 +91,7 @@ export function Workspace() {
           <div className="hidden min-h-0 border-r border-line lg:block">
             <LeftRail searchRef={searchRef} />
           </div>
-          <main className="grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(220px,1fr)_auto]">
+          <main className="grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(180px,1fr)_auto] lg:grid-rows-[minmax(220px,1fr)_auto]">
             <MapPane />
             <AnalyticsDock />
           </main>

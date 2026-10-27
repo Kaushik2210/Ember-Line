@@ -46,10 +46,11 @@ export function SeasonalityTab({ result }: { result: ResultPayload }) {
     const floorFix = (arr: number[]) => (log ? arr.map((v) => (v > 0 ? v : null)) : arr);
     return {
       ...baseOption(c),
-      grid: { left: 52, right: 16, top: 24, bottom: 28 },
+      grid: { left: 52, right: 16, top: 28, bottom: 58 },
       legend: {
-        top: 0,
-        right: 0,
+        type: "scroll",
+        bottom: 0,
+        left: "center",
         data: ["P10–P90", "Middle half (IQR)", "Typical (median)", ...(row ? [String(year)] : [])],
         textStyle: { color: c.muted, fontSize: 11 },
         itemWidth: 14,

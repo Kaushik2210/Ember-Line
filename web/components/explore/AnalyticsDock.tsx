@@ -96,7 +96,7 @@ export function AnalyticsDock() {
   }
 
   return (
-    <section aria-label="Analysis results" className={cn("flex min-h-0 flex-col border-t border-line bg-panel", open ? "max-h-[48dvh]" : "")}>
+    <section aria-label="Analysis results" className={cn("flex min-h-0 flex-col border-t border-line bg-panel", open ? "max-h-[56dvh] lg:max-h-[48dvh]" : "")}>
       <div className="flex items-center gap-1 border-b border-line px-2">
         <div role="tablist" aria-label="Results" className="flex min-w-0 flex-1 gap-0.5 overflow-x-auto">
           {TABS.map((t, i) => {

@@ -5,6 +5,27 @@ import Link from "next/link";
 import { doyLabel } from "@/lib/calendar";
 import { type ShowcaseEntry, exploreLink, pct, signedPct, useShowcase } from "@/lib/showcase";
 
+/** Headline numbers as tiles. The sentences below say the same in words, so screen readers skip these. */
+function Tiles({ f }: { f: NonNullable<ShowcaseEntry["findings"]> }) {
+  const n = f.normalization;
+  const r = f.overlap.ratio;
+  const tiles: [string, string][] = [];
+  if (r != null) tiles.push([`${r.toFixed(r >= 1 ? 1 : 2)}×`, "VIIRS power vs MODIS"]);
+  if (n?.before?.bias_rel != null && n.after?.bias_rel != null) tiles.push([`${signedPct(n.before.bias_rel)} → ${signedPct(n.after.bias_rel)}`, "MODIS bias, held-out years"]);
+  if (f.overpass?.modis_seen_by_viirs != null) tiles.push([pct(f.overpass.modis_seen_by_viirs), "MODIS also seen by VIIRS"]);
+  if (tiles.length === 0) return null;
+  return (
+    <div aria-hidden className="grid grid-cols-3 gap-2">
+      {tiles.map(([v, l]) => (
+        <div key={l} className="rounded-lg border border-line bg-raised px-3 py-2">
+          <div className="num text-base font-semibold leading-tight text-ink sm:text-lg">{v}</div>
+          <div className="mt-0.5 text-[11px] leading-snug text-faint">{l}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Ready({ e }: { e: ShowcaseEntry }) {
   const f = e.findings!;
   const n = f.normalization;
@@ -12,6 +33,7 @@ function Ready({ e }: { e: ShowcaseEntry }) {
   const ev = f.top_events[0];
   return (
     <div className="mt-4 flex flex-col gap-3 text-sm">
+      <Tiles f={f} />
       <p className="text-xs uppercase tracking-wide text-faint">What the data show</p>
       <ul className="flex flex-col gap-2.5 text-muted">
         {seasons.length > 0 && (
