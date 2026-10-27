@@ -105,7 +105,7 @@ export function MapPane() {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-9 right-3 z-10 flex flex-col items-end gap-1.5 sm:bottom-3" aria-live="polite">
+        <div className="pointer-events-none absolute bottom-9 right-3 z-10 flex flex-col items-end gap-1.5" aria-live="polite">
           {drawing && (
             <p className="pointer-events-auto rounded-md bg-panel/95 px-2.5 py-1.5 text-xs text-ink shadow">Drag on the map to draw a box. <button className="underline" onClick={() => setDrawing(false)}>Cancel</button></p>
           )}

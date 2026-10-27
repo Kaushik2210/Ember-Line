@@ -98,8 +98,15 @@ export function CompareMap({ handleRef, mode, day, hotspots, showModis, showViir
           area={area}
           drawing={false}
           onPick={onPick}
+          fit={false}
           onReady={(m) => {
             maps.current.a = m;
+            // a map created later (back from overlay) starts at the same view as its partner
+            const b = maps.current.b;
+            if (b) m.jumpTo({ center: b.getCenter(), zoom: b.getZoom() });
+          }}
+          onRemove={(m) => {
+            if (maps.current.a === m) delete maps.current.a;
           }}
           onMove={followA}
         />
@@ -118,6 +125,9 @@ export function CompareMap({ handleRef, mode, day, hotspots, showModis, showViir
           onPick={onPick}
           onReady={(m) => {
             maps.current.b = m;
+          }}
+          onRemove={(m) => {
+            if (maps.current.b === m) delete maps.current.b;
           }}
           onMove={followB}
         />

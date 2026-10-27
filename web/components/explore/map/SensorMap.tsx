@@ -54,19 +54,23 @@ type Props = {
   interactive?: boolean;
   /** Padding in pixels around the area when framing it; lets a page keep one side of the map free. */
   framePadding?: maplibregl.PaddingOptions;
+  /** False keeps the camera where it is when the area changes (a follower map is moved by its partner). */
+  fit?: boolean;
   /** Drawn rectangle as [west, south, east, north]. */
   onDrawEnd?: (b: BBox) => void;
   onPick?: (f: HotspotFeature | null) => void;
   onReady?: (map: MlMap) => void;
+  onRemove?: (map: MlMap) => void;
   onMove?: (map: MlMap) => void;
 };
 
-export function SensorMap({ sensor, day, buffers, area, drawing, interactive = true, framePadding, onDrawEnd, onPick, onReady, onMove }: Props) {
+export function SensorMap({ sensor, day, buffers, area, drawing, interactive = true, framePadding, fit = true, onDrawEnd, onPick, onReady, onRemove, onMove }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
-  const cb = useRef({ onPick, onDrawEnd, onMove, onReady });
-  cb.current = { onPick, onDrawEnd, onMove, onReady };
+  const loaded = useRef(false);
+  const cb = useRef({ onPick, onDrawEnd, onMove, onReady, onRemove });
+  cb.current = { onPick, onDrawEnd, onMove, onReady, onRemove };
 
   // create once
   useEffect(() => {
@@ -90,6 +94,7 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     map.addControl(overlay as unknown as maplibregl.IControl);
     mapRef.current = map;
     overlayRef.current = overlay;
+    loaded.current = false;
     map.on("move", () => cb.current.onMove?.(map));
     map.on("load", () => {
       map.addSource("area", { type: "geojson", data: bboxFeature(null) });
@@ -97,9 +102,12 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
       map.addSource("draw", { type: "geojson", data: bboxFeature(null) });
       map.addLayer({ id: "draw-fill", type: "fill", source: "draw", paint: { "fill-color": "#b8a6ff", "fill-opacity": 0.2 } });
       map.addLayer({ id: "draw-line", type: "line", source: "draw", paint: { "line-color": "#b8a6ff", "line-width": 2 } });
+      loaded.current = true;
       cb.current.onReady?.(map);
     });
     return () => {
+      loaded.current = false;
+      cb.current.onRemove?.(map);
       map.remove();
       mapRef.current = null;
       overlayRef.current = null;
@@ -117,7 +125,8 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
       const img = imageryFor(sensor, day).layer;
       src?.setTiles([tileUrl(img, day)]);
     };
-    if (map.isStyleLoaded()) apply();
+    // isStyleLoaded() is false while tiles are loading, and "load" only fires once, so track it ourselves
+    if (loaded.current) apply();
     else map.once("load", apply);
   }, [sensor, day]);
 
@@ -162,13 +171,13 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     if (!map) return;
     const go = () => {
       (map.getSource("area") as maplibregl.GeoJSONSource | undefined)?.setData(bboxFeature(area));
-      if (area) {
+      if (area && fit) {
         map.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: framePadding ?? 48, duration: prefersReducedMotion() ? 0 : 600 });
       }
     };
-    if (map.isStyleLoaded() && map.getSource("area")) go();
+    if (loaded.current) go();
     else map.once("load", go);
-  }, [area, framePadding]);
+  }, [area, framePadding, fit]);
 
   // drawing a box: drag on the map
   useEffect(() => {
@@ -176,6 +185,7 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     if (!map || !drawing) return;
     const canvas = map.getCanvasContainer();
     let start: maplibregl.LngLat | null = null;
+    let last: maplibregl.LngLat | null = null;
     const draw = (a: maplibregl.LngLat, b: maplibregl.LngLat) => {
       const box: BBox = [Math.min(a.lng, b.lng), Math.min(a.lat, b.lat), Math.max(a.lng, b.lng), Math.max(a.lat, b.lat)];
       (map.getSource("draw") as maplibregl.GeoJSONSource | undefined)?.setData(bboxFeature(box));
@@ -183,15 +193,18 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     };
     const down = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
       e.preventDefault();
-      start = e.lngLat;
+      start = last = e.lngLat;
     };
     const move = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
-      if (start) draw(start, e.lngLat);
+      if (!start) return;
+      last = e.lngLat;
+      draw(start, last);
     };
+    // a touchend event carries no position, so the box ends where the finger last was
     const up = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
       if (!start) return;
-      const box = draw(start, e.lngLat);
-      start = null;
+      const box = draw(start, e.lngLat ?? last ?? start);
+      start = last = null;
       (map.getSource("draw") as maplibregl.GeoJSONSource | undefined)?.setData(bboxFeature(null));
       if (box[2] - box[0] > 0.05 && box[3] - box[1] > 0.05) cb.current.onDrawEnd?.(box);
     };
