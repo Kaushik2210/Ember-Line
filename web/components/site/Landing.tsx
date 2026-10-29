@@ -3,7 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { formatDay } from "@/lib/day";
-import { exploreLink, featured, proofStats, useShowcase } from "@/lib/showcase";
+import { type ShowcaseEntry, exploreLink, featured, proofStats, signedPct, useShowcase } from "@/lib/showcase";
 import { HeroMap } from "./HeroMap";
 import { SiteFooter, SiteHeader } from "./SiteShell";
 
@@ -34,6 +34,41 @@ const QUESTIONS = [
   },
 ] as const;
 
+/** One live card per analysed region: the headline disagreement and what normalising does to it. Real values only. */
+function RegionCard({ e }: { e: ShowcaseEntry }) {
+  const f = e.findings!;
+  const r = f.overlap.ratio;
+  const n = f.normalization;
+  const bias = n?.before?.bias_rel != null && n.after?.bias_rel != null ? `${signedPct(n.before.bias_rel)} → ${signedPct(n.after.bias_rel)}` : null;
+  return (
+    <li>
+      <Link
+        href={exploreLink(e)}
+        className="group flex h-full flex-col justify-between gap-4 rounded-xl border border-line bg-panel p-4 transition-colors duration-150 hover:border-[var(--border-strong)]"
+      >
+        <h3 className="text-sm font-semibold text-ink">{e.name}</h3>
+        <dl className="grid grid-cols-2 gap-3">
+          {r != null && (
+            <div>
+              <dt className="text-[11px] leading-snug text-faint">VIIRS power vs MODIS</dt>
+              <dd className="num mt-0.5 text-lg font-semibold text-ink">{r.toFixed(r >= 1 ? 1 : 2)}×</dd>
+            </div>
+          )}
+          {bias && (
+            <div>
+              <dt className="text-[11px] leading-snug text-faint">MODIS bias, normalised</dt>
+              <dd className="num mt-0.5 text-lg font-semibold text-ink">{bias}</dd>
+            </div>
+          )}
+        </dl>
+        <span className="inline-flex items-center gap-1 text-sm text-viirs group-hover:underline">
+          Open in the workspace <ArrowRight aria-hidden className="size-3.5" />
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 export function Landing() {
   const showcase = useShowcase();
   const entry = featured(showcase.data);
@@ -41,6 +76,7 @@ export function Landing() {
   const stats = f ? proofStats(f) : [];
   const computing = showcase.data?.some((e) => e.state === "computing");
   const start = entry ? exploreLink(entry) : "/explore";
+  const ready = (showcase.data ?? []).filter((e) => e.state === "ready" && e.findings && !e.findings.synthetic);
 
   return (
     <div className="bg-bg text-ink">
@@ -130,6 +166,18 @@ export function Landing() {
           ))}
         </ol>
       </section>
+
+      {ready.length > 1 && (
+        <section aria-labelledby="regions-heading" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+          <h2 id="regions-heading" className="text-2xl font-semibold tracking-tight">The same disagreement, in {ready.length} places</h2>
+          <p className="mt-2 max-w-2xl text-muted">Computed from NASA FIRMS data for each region. The ratio is how much more fire power VIIRS records than MODIS on the same days; the bias is what is left after normalising, on years the model never saw.</p>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {ready.map((e) => (
+              <RegionCard key={e.id} e={e} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="border-t border-line bg-panel">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-10 sm:px-6">
