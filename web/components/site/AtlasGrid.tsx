@@ -11,17 +11,20 @@ function Tiles({ f }: { f: NonNullable<ShowcaseEntry["findings"]> }) {
   const r = f.overlap.ratio;
   const tiles: [string, string][] = [];
   if (r != null) tiles.push([`${r.toFixed(r >= 1 ? 1 : 2)}×`, "VIIRS power vs MODIS"]);
-  if (n?.before?.bias_rel != null && n.after?.bias_rel != null) tiles.push([`${signedPct(n.before.bias_rel)} → ${signedPct(n.after.bias_rel)}`, "MODIS bias, held-out years"]);
   if (f.overpass?.modis_seen_by_viirs != null) tiles.push([pct(f.overpass.modis_seen_by_viirs), "MODIS also seen by VIIRS"]);
+  // the bias tile is the widest, so it gets a row of its own until the card is wide enough for three across
+  if (n?.before?.bias_rel != null && n.after?.bias_rel != null) tiles.push([`${signedPct(n.before.bias_rel)} → ${signedPct(n.after.bias_rel)}`, "MODIS bias, held-out years"]);
   if (tiles.length === 0) return null;
   return (
-    <div aria-hidden className="grid grid-cols-3 gap-2">
-      {tiles.map(([v, l]) => (
-        <div key={l} className="rounded-lg border border-line bg-raised px-3 py-2">
-          <div className="num text-base font-semibold leading-tight text-ink sm:text-lg">{v}</div>
-          <div className="mt-0.5 text-[11px] leading-snug text-faint">{l}</div>
-        </div>
-      ))}
+    <div aria-hidden className="@container">
+      <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
+        {tiles.map(([v, l]) => (
+          <div key={l} className="rounded-lg border border-line bg-raised px-3 py-2 last:odd:col-span-2 @md:last:odd:col-span-1">
+            <div className="num whitespace-nowrap text-base font-semibold leading-tight text-ink sm:text-lg">{v}</div>
+            <div className="mt-0.5 text-[11px] leading-snug text-faint">{l}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

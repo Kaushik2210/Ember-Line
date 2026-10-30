@@ -69,6 +69,8 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
   const mapRef = useRef<MlMap | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const loaded = useRef(false);
+  // the frame to keep when the container changes size, until the visitor moves the map themselves
+  const frame = useRef<{ area: BBox | null; padding: maplibregl.PaddingOptions | number; fit: boolean; touched: boolean }>({ area: null, padding: 48, fit: true, touched: false });
   const cb = useRef({ onPick, onDrawEnd, onMove, onReady, onRemove });
   cb.current = { onPick, onDrawEnd, onMove, onReady, onRemove };
 
@@ -96,6 +98,14 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     overlayRef.current = overlay;
     loaded.current = false;
     map.on("move", () => cb.current.onMove?.(map));
+    map.on("movestart", (e) => {
+      if ((e as { originalEvent?: unknown }).originalEvent) frame.current.touched = true;
+    });
+    // the container is often laid out after the map is created, so a fit made at the old size is redone
+    map.on("resize", () => {
+      const f = frame.current;
+      if (f.area && f.fit && !f.touched) map.fitBounds([[f.area[0], f.area[1]], [f.area[2], f.area[3]]], { padding: f.padding, duration: 0 });
+    });
     map.on("load", () => {
       map.addSource("area", { type: "geojson", data: bboxFeature(null) });
       map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#ffffff", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.85 } });
@@ -171,6 +181,7 @@ export function SensorMap({ sensor, day, buffers, area, drawing, interactive = t
     if (!map) return;
     const go = () => {
       (map.getSource("area") as maplibregl.GeoJSONSource | undefined)?.setData(bboxFeature(area));
+      frame.current = { area, padding: framePadding ?? 48, fit, touched: false };
       if (area && fit) {
         map.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: framePadding ?? 48, duration: prefersReducedMotion() ? 0 : 600 });
       }
