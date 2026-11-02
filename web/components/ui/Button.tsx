@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+type Props = React.ComponentPropsWithRef<"button"> & {
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
 };
@@ -17,6 +17,6 @@ const variants = {
 
 const sizes = { sm: "h-8 px-3 text-xs", md: "h-10 px-4 text-sm" };
 
-export function Button({ variant = "secondary", size = "md", className, type = "button", ...rest }: Props) {
-  return <button type={type} className={cn(base, variants[variant], sizes[size], className)} {...rest} />;
+export function Button({ variant = "secondary", size = "md", className, type = "button", ref, ...rest }: Props) {
+  return <button ref={ref} type={type} className={cn(base, variants[variant], sizes[size], className)} {...rest} />;
 }

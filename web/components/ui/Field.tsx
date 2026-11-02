@@ -31,7 +31,7 @@ export function Field({ label, hint, children, className }: FieldProps) {
 
 const control =
   "w-full rounded-lg border border-line bg-raised px-3 text-sm text-ink " +
-  "h-9 pointer-coarse:h-11 hover:border-[var(--border-strong)] disabled:opacity-50";
+  "h-9 pointer-coarse:h-11 hover:border-[var(--border-strong)] disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Select({ className, ...rest }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className={cn(control, "appearance-auto", className)} {...rest} />;
@@ -67,7 +67,7 @@ export function Switch({ label, checked, onChange, hint, disabled }: SwitchProps
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative mt-0.5 h-6 w-10 shrink-0 rounded-full border border-line transition-colors duration-150 disabled:opacity-50",
+          "relative mt-0.5 h-6 w-10 shrink-0 rounded-full border border-line transition-colors duration-150 hover:border-[var(--border-strong)] disabled:cursor-not-allowed disabled:opacity-50",
           checked ? "bg-harmonized" : "bg-raised",
         )}
       >

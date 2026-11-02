@@ -17,13 +17,22 @@ export function ExportMenu({ ready }: { ready: boolean }) {
   const [{ job }] = useExploreParams();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const items = () => Array.from(box.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        trigger.current?.focus();
+      }
+    };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
+    // Move focus into the menu so arrow keys work straight away.
+    items()[0]?.focus();
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
@@ -32,12 +41,28 @@ export function ExportMenu({ ready }: { ready: boolean }) {
 
   return (
     <div ref={box} className="relative">
-      <Button variant="ghost" size="sm" aria-label="Export" disabled={!ready || !job} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <Button ref={trigger} variant="ghost" size="sm" aria-label="Export" disabled={!ready || !job} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Download aria-hidden className="size-4" />
         <span className="hidden sm:inline">Export</span>
       </Button>
       {open && job && (
-        <ul role="menu" aria-label="Export" className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-line bg-panel p-1 shadow-2xl">
+        <ul
+          role="menu"
+          aria-label="Export"
+          onKeyDown={(e) => {
+            const list = items();
+            const i = list.indexOf(document.activeElement as HTMLElement);
+            const go = (n: number) => {
+              e.preventDefault();
+              list[(n + list.length) % list.length]?.focus();
+            };
+            if (e.key === "ArrowDown") go(i + 1);
+            else if (e.key === "ArrowUp") go(i - 1);
+            else if (e.key === "Home") go(0);
+            else if (e.key === "End") go(list.length - 1);
+            else if (e.key === "Tab") setOpen(false);
+          }}
+          className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-line bg-panel p-1 shadow-2xl">
           {ITEMS.map((it) => (
             <li key={it.format} role="none">
               <a
