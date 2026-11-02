@@ -9,19 +9,27 @@ export function Toc({ items }: { items: readonly (readonly [string, string])[] }
 
   useEffect(() => {
     const els = items.map(([id]) => document.getElementById(id)).filter((el): el is HTMLElement => !!el);
-    if (els.length === 0 || typeof IntersectionObserver === "undefined") return;
-    const seen = new Map<string, boolean>();
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) seen.set(e.target.id, e.isIntersecting);
-        // the first heading (in page order) inside the reading band wins
-        const first = els.find((el) => seen.get(el.id));
-        if (first) setActive(first.id);
-      },
-      { rootMargin: "-10% 0px -75% 0px" },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    if (els.length === 0) return;
+    let raf = 0;
+    // the current section is the last heading that has passed a reading line a quarter of the way down
+    const update = () => {
+      raf = 0;
+      const line = window.innerHeight * 0.25;
+      let current: string | null = null;
+      for (const el of els) if (el.getBoundingClientRect().top <= line) current = el.id;
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [items]);
 
   return (
