@@ -18,7 +18,7 @@ export function ChartFrame({ title, note, state = "ready", onRetry, children }: 
         <p className="py-10 text-center text-sm text-muted">No data for this selection.</p>
       )}
       {state === "error" && (
-        <div className="py-10 text-center text-sm text-muted">
+        <div role="alert" className="py-10 text-center text-sm text-muted">
           Something went wrong.{" "}
           {onRetry && (
             <button onClick={onRetry} className="min-h-11 px-2 text-ink underline">

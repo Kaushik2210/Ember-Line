@@ -32,13 +32,13 @@ export function Drawer({ open, title, onClose, side = "right", children }: Props
   if (!open) return null;
   return (
     <>
-      <div aria-hidden className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={onClose} />
+      <div aria-hidden className="fade-in fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={onClose} />
       <aside
         role="dialog"
         aria-label={title}
         className={cn(
           "fixed inset-y-0 z-40 flex w-full max-w-md flex-col overflow-hidden border-line bg-panel shadow-2xl",
-          side === "right" ? "right-0 border-l" : "left-0 border-r",
+          side === "right" ? "drawer-right right-0 border-l" : "drawer-left left-0 border-r",
         )}
       >
         <div className="flex min-h-12 items-center justify-between border-b border-line px-4">

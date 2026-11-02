@@ -7,7 +7,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const base =
   "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 " +
-  "disabled:cursor-not-allowed disabled:opacity-50 pointer-coarse:min-h-11";
+  "active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 pointer-coarse:min-h-11";
 
 const variants = {
   primary: "bg-ink text-bg hover:opacity-90",

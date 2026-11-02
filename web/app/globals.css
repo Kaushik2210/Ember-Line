@@ -95,8 +95,38 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
-  border-radius: 4px;
 }
+
+/* Keyboard users jump past the header; hidden until focused. */
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+}
+.skip-link:focus {
+  transform: none;
+}
+
+@keyframes drawer-in-right {
+  from { transform: translateX(24px); opacity: 0; }
+}
+@keyframes drawer-in-left {
+  from { transform: translateX(-24px); opacity: 0; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+.drawer-right { animation: drawer-in-right 180ms var(--ease); }
+.drawer-left { animation: drawer-in-left 180ms var(--ease); }
+.fade-in { animation: fade-in 180ms var(--ease); }
 
 @media (prefers-reduced-motion: reduce) {
   *,

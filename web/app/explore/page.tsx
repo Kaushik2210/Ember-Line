@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Workspace } from "@/components/explore/Workspace";
 
-export const metadata: Metadata = { title: "Explore · EMBERLINE" };
+export const metadata: Metadata = { title: "Explore" };
 
 export default function ExplorePage() {
   return (

@@ -4,7 +4,7 @@ import { Equation, Prose } from "@/components/site/Prose";
 import { PageShell } from "@/components/site/SiteShell";
 
 export const metadata: Metadata = {
-  title: "Method · EMBERLINE",
+  title: "Method",
   description: "How EMBERLINE harmonizes MODIS and VIIRS active-fire records: data, equations, validation, assumptions and limits.",
 };
 

@@ -3,7 +3,7 @@ import { Prose } from "@/components/site/Prose";
 import { ACKNOWLEDGMENT, PageShell } from "@/components/site/SiteShell";
 
 export const metadata: Metadata = {
-  title: "About · EMBERLINE",
+  title: "About",
   description: "Data sources, NASA attribution, how to cite and where the code lives.",
 };
 

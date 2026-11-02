@@ -3,7 +3,7 @@ import { AtlasGrid } from "@/components/site/AtlasGrid";
 import { PageShell } from "@/components/site/SiteShell";
 
 export const metadata: Metadata = {
-  title: "Atlas · EMBERLINE",
+  title: "Atlas",
   description: "Eight places where MODIS and VIIRS tell different stories about fire, with findings computed from the record.",
 };
 
