@@ -45,6 +45,9 @@ export function TimeScrubber({ start, end, day, onDay, disabled }: Props) {
     return () => clearTimeout(t);
   }, [playing, day, end, onDay, setPlaying, disabled]);
 
+  const atStart = !day || day <= start;
+  const atEnd = !day || day >= end;
+
   return (
     <div className="flex items-center gap-2 border-t border-line bg-panel px-3 py-2">
       <button
@@ -52,11 +55,12 @@ export function TimeScrubber({ start, end, day, onDay, disabled }: Props) {
         disabled={disabled}
         onClick={() => setPlaying(!playing)}
         aria-label={playing ? "Pause playback" : "Play through days"}
+        title={playing ? "Pause (Space)" : "Play (Space)"}
         className="grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-raised text-ink hover:border-[var(--border-strong)] disabled:opacity-50 pointer-coarse:size-11"
       >
         {playing ? <Pause aria-hidden className="size-4" /> : <Play aria-hidden className="size-4" />}
       </button>
-      <button type="button" disabled={disabled} onClick={() => step(-1)} aria-label="Previous day" className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:text-ink disabled:opacity-50 pointer-coarse:size-11">
+      <button type="button" disabled={disabled || atStart} onClick={() => step(-1)} aria-label="Previous day" title="Previous day ([)" className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:text-ink disabled:opacity-50 pointer-coarse:size-11">
         <ChevronLeft aria-hidden className="size-4" />
       </button>
       <input
@@ -70,7 +74,7 @@ export function TimeScrubber({ start, end, day, onDay, disabled }: Props) {
         onChange={(e) => onDay(addDays(start, Number(e.target.value)))}
         className="h-6 min-w-0 flex-1 accent-[var(--harmonized)]"
       />
-      <button type="button" disabled={disabled} onClick={() => step(1)} aria-label="Next day" className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:text-ink disabled:opacity-50 pointer-coarse:size-11">
+      <button type="button" disabled={disabled || atEnd} onClick={() => step(1)} aria-label="Next day" title="Next day (])" className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:text-ink disabled:opacity-50 pointer-coarse:size-11">
         <ChevronRight aria-hidden className="size-4" />
       </button>
       <time className="num w-28 shrink-0 text-right text-xs text-ink" dateTime={day ?? undefined}>

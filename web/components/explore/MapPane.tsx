@@ -22,7 +22,7 @@ import { TimeScrubber } from "./map/TimeScrubber";
 // MapLibre needs the browser, so the map is loaded on the client only
 const CompareMap = dynamic(() => import("./map/CompareMap").then((m) => m.CompareMap), {
   ssr: false,
-  loading: () => <div className="absolute inset-0 animate-pulse bg-raised" aria-label="Loading map" />,
+  loading: () => <div role="status" className="absolute inset-0 animate-pulse bg-raised" aria-label="Loading map" />,
 });
 
 export function MapPane() {
@@ -107,7 +107,7 @@ export function MapPane() {
 
         <div className="pointer-events-none absolute bottom-9 right-3 z-10 flex flex-col items-end gap-1.5" aria-live="polite">
           {drawing && (
-            <p className="pointer-events-auto rounded-md bg-panel/95 px-2.5 py-1.5 text-xs text-ink shadow">Drag on the map to draw a box. <button className="underline" onClick={() => setDrawing(false)}>Cancel</button></p>
+            <p className="pointer-events-auto rounded-md bg-panel/95 px-2.5 py-1.5 text-xs text-ink shadow">Drag on the map to draw a box. <button className="underline pointer-coarse:min-h-11 pointer-coarse:px-2" onClick={() => setDrawing(false)}>Cancel</button></p>
           )}
           {hotspots.isFetching && (
             <p className="flex items-center gap-1.5 rounded-md bg-panel/90 px-2.5 py-1.5 text-xs text-muted shadow">
@@ -142,7 +142,7 @@ export function MapPane() {
           <div role="alert" className="absolute inset-x-0 top-14 z-10 flex justify-center">
             <p className="rounded-lg border border-hot/40 bg-panel/95 px-4 py-2 text-xs text-ink shadow">
               Detections could not be loaded.{" "}
-              <button className="underline" onClick={() => void hotspots.refetch()}>Retry</button>
+              <button className="underline pointer-coarse:min-h-11 pointer-coarse:px-2" onClick={() => void hotspots.refetch()}>Retry</button>
             </p>
           </div>
         )}

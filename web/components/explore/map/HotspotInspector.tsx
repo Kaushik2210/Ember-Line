@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useEffect } from "react";
 import type { HotspotFeature } from "@/lib/types";
 import { SensorBadge } from "@/components/ui/SensorBadge";
 
@@ -20,11 +21,18 @@ export function HotspotInspector({ feature, onClose }: { feature: HotspotFeature
   const p = feature.properties;
   const [lon, lat] = feature.geometry.coordinates;
   const cell = p.count !== undefined;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <div role="dialog" aria-label="Detection details" className="absolute bottom-3 left-3 z-20 w-60 rounded-xl border border-line bg-panel/95 p-3 shadow-xl backdrop-blur">
+    <div role="dialog" aria-label="Detection details" className="fade-in absolute bottom-3 left-3 z-20 w-60 rounded-xl border border-line bg-panel/95 p-3 shadow-xl backdrop-blur">
       <div className="mb-2 flex items-center justify-between">
         <SensorBadge sensor={p.sensor} />
-        <button type="button" onClick={onClose} aria-label="Close details" className="grid size-7 place-items-center rounded-md text-muted hover:text-ink pointer-coarse:size-11">
+        <button type="button" onClick={onClose} aria-label="Close details" className="grid size-8 place-items-center rounded-md text-muted hover:text-ink pointer-coarse:size-11">
           <X aria-hidden className="size-4" />
         </button>
       </div>
