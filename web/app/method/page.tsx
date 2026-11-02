@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MethodLive } from "@/components/site/MethodLive";
 import { Equation, Prose } from "@/components/site/Prose";
+import { Toc } from "@/components/site/Toc";
 import { PageShell } from "@/components/site/SiteShell";
 
 export const metadata: Metadata = {
@@ -45,17 +46,7 @@ export default function MethodPage() {
   return (
     <PageShell current="/method">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)]">
-        <nav aria-label="On this page" className="hidden lg:block">
-          <ul className="sticky top-6 flex flex-col gap-1 text-sm">
-            {TOC.map(([id, label]) => (
-              <li key={id}>
-                <a href={`#${id}`} className="block rounded-md px-2 py-1 text-muted hover:bg-raised hover:text-ink">
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <Toc items={TOC} />
 
         <article className="min-w-0">
           <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">Method</h1>

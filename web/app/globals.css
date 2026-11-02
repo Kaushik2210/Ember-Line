@@ -128,6 +128,12 @@ body {
 .drawer-left { animation: drawer-in-left 180ms var(--ease); }
 .fade-in { animation: fade-in 180ms var(--ease); }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -12,17 +12,17 @@ function CvTable({ f }: { f: NonNullable<Findings["normalization"]> }) {
         <caption className="sr-only">Cross-validated error of each normalisation model</caption>
         <thead>
           <tr className="text-xs text-muted">
-            <th className="py-1.5 pr-4 font-medium">Model</th>
-            <th className="pr-4 font-medium">R² (log)</th>
-            <th className="pr-4 font-medium">Error (log)</th>
-            <th className="pr-4 font-medium">Bias</th>
-            <th className="pr-4 font-medium">Rank corr.</th>
-            <th className="font-medium">Coverage</th>
+            <th scope="col" className="py-1.5 pr-4 font-medium">Model</th>
+            <th scope="col" className="pr-4 font-medium">R² (log)</th>
+            <th scope="col" className="pr-4 font-medium">Error (log)</th>
+            <th scope="col" className="pr-4 font-medium">Bias</th>
+            <th scope="col" className="pr-4 font-medium">Rank corr.</th>
+            <th scope="col" className="font-medium">Coverage</th>
           </tr>
         </thead>
         <tbody className="num text-ink">
           {f.cv.map((r) => (
-            <tr key={r.model} className="border-t border-line">
+            <tr key={r.model} className={`border-t border-line ${r.model === f.chosen ? "bg-raised/60" : ""}`}>
               <td className="py-2 pr-4 font-sans">
                 {r.model}
                 {r.model === f.chosen ? " (chosen)" : !r.selectable ? " (baseline)" : ""}

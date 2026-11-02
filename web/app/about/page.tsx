@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CopyButton } from "@/components/site/CopyButton";
 import { Prose } from "@/components/site/Prose";
 import { ACKNOWLEDGMENT, PageShell } from "@/components/site/SiteShell";
 
@@ -29,6 +30,14 @@ const SOURCES = [
     via: "NASA GIBS (no key needed)",
   },
 ] as const;
+
+const CITATION = `@misc{emberline2026,
+  title        = {{EMBERLINE}: a harmonized MODIS and VIIRS fire calendar},
+  author       = {{EMBERLINE contributors}},
+  year         = {2026},
+  howpublished = {NASA Space Apps Challenge 2026},
+  url          = {${REPO}}
+}`;
 
 export default function AboutPage() {
   return (
@@ -78,15 +87,12 @@ export default function AboutPage() {
           <h2 id="cite">How to cite</h2>
           <p>If you use EMBERLINE in your work, please cite the project and, separately, NASA FIRMS using the wording above.</p>
         </Prose>
-        <pre className="mt-3 overflow-x-auto rounded-lg border border-line bg-panel p-4 text-xs leading-relaxed text-ink">
-          <code>{`@misc{emberline2026,
-  title        = {{EMBERLINE}: a harmonized MODIS and VIIRS fire calendar},
-  author       = {{EMBERLINE contributors}},
-  year         = {2026},
-  howpublished = {NASA Space Apps Challenge 2026},
-  url          = {${REPO}}
-}`}</code>
-        </pre>
+        <div className="relative mt-3">
+          <pre className="overflow-x-auto rounded-lg border border-line bg-panel p-4 pr-24 text-xs leading-relaxed text-ink">
+            <code>{CITATION}</code>
+          </pre>
+          <CopyButton text={CITATION} label="Copy citation" />
+        </div>
 
         <Prose>
           <h2 id="code">Code</h2>
