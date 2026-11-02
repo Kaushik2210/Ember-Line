@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useResult } from "@/lib/analysis";
 import { cn } from "@/lib/cn";
 import { useExploreStore } from "@/lib/store";
@@ -37,6 +37,11 @@ export function AnalyticsDock() {
   const [open, setOpen] = useState(true);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // On narrow screens the tab row scrolls; keep the selected tab visible, including after a deep link.
+  useEffect(() => {
+    tabRefs.current[TABS.indexOf(p.tab)]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [p.tab]);
+
   const onKey = (e: React.KeyboardEvent, i: number) => {
     const last = TABS.length - 1;
     const next = e.key === "ArrowRight" ? (i === last ? 0 : i + 1) : e.key === "ArrowLeft" ? (i === 0 ? last : i - 1) : e.key === "Home" ? 0 : e.key === "End" ? last : null;
@@ -69,7 +74,7 @@ export function AnalyticsDock() {
     body = (
       <div role="alert" className="p-4 text-sm text-muted">
         This saved analysis could not be loaded.{" "}
-        <button className="text-ink underline" onClick={() => void result.refetch()}>
+        <button className="text-ink underline pointer-coarse:min-h-11 pointer-coarse:px-2" onClick={() => void result.refetch()}>
           Retry
         </button>{" "}
         or run it again from the controls.
@@ -139,7 +144,9 @@ export function AnalyticsDock() {
       </div>
       {open && (
         <div role="tabpanel" id={`panel-${p.tab}`} aria-labelledby={`tab-${p.tab}`} className="min-h-0 flex-1 overflow-auto">
-          {body}
+          <div key={p.tab} className="fade-in">
+            {body}
+          </div>
           {data && phase !== "running" && <Provenance result={data} />}
         </div>
       )}

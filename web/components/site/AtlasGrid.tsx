@@ -128,14 +128,14 @@ export function AtlasGrid() {
     return (
       <p role="alert" className="rounded-xl border border-line bg-panel p-5 text-sm text-muted">
         The data service is not reachable, so the case studies cannot be shown.{" "}
-        <button className="text-ink underline" onClick={() => void q.refetch()}>
+        <button className="text-ink underline pointer-coarse:min-h-11 pointer-coarse:px-2" onClick={() => void q.refetch()}>
           Retry
         </button>
       </p>
     );
   }
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="fade-in grid gap-4 md:grid-cols-2">
       {q.data.map((e) => (
         <Card key={e.id} e={e} />
       ))}
