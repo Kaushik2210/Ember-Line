@@ -66,7 +66,7 @@ export function RegionSection({ searchRef }: { searchRef: React.RefObject<HTMLIn
         {regions.isError && (
           <li className="rounded-lg border border-line p-3 text-xs text-muted">
             Regions could not be loaded.{" "}
-            <button className="text-ink underline" onClick={() => void regions.refetch()}>
+            <button className="text-ink underline pointer-coarse:min-h-11 pointer-coarse:px-2" onClick={() => void regions.refetch()}>
               Retry
             </button>
           </li>
@@ -133,7 +133,7 @@ export function RegionSection({ searchRef }: { searchRef: React.RefObject<HTMLIn
               setGeojson(null);
               void setP({ box: null, job: null });
             }}
-            className="rounded-md p-1 text-muted hover:text-ink pointer-coarse:size-11"
+            className="grid size-8 shrink-0 place-items-center rounded-md text-muted hover:text-ink pointer-coarse:size-11"
           >
             <X aria-hidden className="size-4" />
           </button>

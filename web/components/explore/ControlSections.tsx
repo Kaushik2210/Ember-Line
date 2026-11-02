@@ -47,11 +47,21 @@ export function PeriodSection() {
         </Field>
       </div>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Period presets">
-        {presets.map((pr) => (
-          <Button key={pr.label} size="sm" variant="ghost" className="border border-line" onClick={() => void setP({ s: pr.s, e: pr.e, job: null })}>
-            {pr.label}
-          </Button>
-        ))}
+        {presets.map((pr) => {
+          const on = pr.s === start && pr.e === end;
+          return (
+            <Button
+              key={pr.label}
+              size="sm"
+              variant="ghost"
+              aria-pressed={on}
+              className={on ? "border border-harmonized bg-raised text-ink" : "border border-line"}
+              onClick={() => void setP({ s: pr.s, e: pr.e, job: null })}
+            >
+              {pr.label}
+            </Button>
+          );
+        })}
       </div>
       <p className="text-xs text-faint">
         The harmonisation needs at least a year and several VIIRS-era years to fit. Going back before 2012 reconstructs
