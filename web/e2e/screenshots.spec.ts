@@ -12,6 +12,15 @@ test.beforeAll(() => mkdirSync(DIR, { recursive: true }));
 async function settle(page: import("@playwright/test").Page) {
   await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => undefined);
   await page.waitForTimeout(1500); // map tiles and charts finish painting
+  // scroll through the page so scroll-triggered reveals have played before a full-page capture
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 500) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    window.scrollTo(0, 0);
+  });
+  await page.waitForTimeout(1000);
 }
 
 for (const [name, path] of [

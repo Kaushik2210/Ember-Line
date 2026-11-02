@@ -43,7 +43,12 @@ const entry = (id: string, state: ShowcaseEntry["state"], extra: Partial<Showcas
 function mockApi(rows: ShowcaseEntry[] | "down") {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => (rows === "down" ? Promise.reject(new Error("offline")) : new Response(JSON.stringify(rows), { status: 200 }))),
+    vi.fn(async (url: string) => {
+      if (rows === "down") return Promise.reject(new Error("offline"));
+      // the hero map asks for detections; answer it with an empty collection, as the real API does for a quiet day
+      if (String(url).includes("/api/hotspots")) return new Response(JSON.stringify({ type: "FeatureCollection", features: [], properties: {} }), { status: 200 });
+      return new Response(JSON.stringify(rows), { status: 200 });
+    }),
   );
 }
 
@@ -105,9 +110,9 @@ describe("Landing", () => {
   it("shows the three computed statistics and where they come from", async () => {
     mockApi([entry("punjab-haryana", "ready")]);
     wrap(<Landing />);
-    await waitFor(() => expect(screen.getByText("1.7×")).toBeTruthy());
-    expect(screen.getByText("−41% → +1%")).toBeTruthy();
-    expect(screen.getByText("26 years")).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByText("1.7×").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("−41% → +1%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("26 years").length).toBeGreaterThan(0);
     expect(screen.getByText(/Computed from NASA FIRMS data for Region punjab-haryana, 2000 to 2025/)).toBeTruthy();
   });
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDay } from "@/lib/day";
 import { type ShowcaseEntry, exploreLink, featured, proofStats, signedPct, useShowcase } from "@/lib/showcase";
 import { HeroMap } from "./HeroMap";
+import { Embers, Glow, Marquee, Reveal, Scramble, ScrollProgress, SplitWords } from "./fx";
 import { SiteFooter, SiteHeader } from "./SiteShell";
 
 const QUESTIONS = [
@@ -35,13 +36,14 @@ const QUESTIONS = [
 ] as const;
 
 /** One live card per analysed region: the headline disagreement and what normalising does to it. Real values only. */
-function RegionCard({ e }: { e: ShowcaseEntry }) {
+function RegionCard({ e, i }: { e: ShowcaseEntry; i: number }) {
   const f = e.findings!;
   const r = f.overlap.ratio;
   const n = f.normalization;
   const bias = n?.before?.bias_rel != null && n.after?.bias_rel != null ? `${signedPct(n.before.bias_rel)} → ${signedPct(n.after.bias_rel)}` : null;
   return (
-    <li>
+    <Reveal as="li" delay={(i % 3) * 0.08}>
+      <Glow className="h-full rounded-xl">
       <Link
         href={exploreLink(e)}
         className="group flex h-full flex-col justify-between gap-4 rounded-xl border border-line bg-panel p-4 transition-colors duration-150 hover:border-[var(--border-strong)]"
@@ -65,7 +67,8 @@ function RegionCard({ e }: { e: ShowcaseEntry }) {
           Open in the workspace <ArrowRight aria-hidden className="size-3.5" />
         </span>
       </Link>
-    </li>
+      </Glow>
+    </Reveal>
   );
 }
 
@@ -80,8 +83,19 @@ export function Landing() {
 
   return (
     <div className="bg-bg text-ink">
-      <section className="relative isolate flex min-h-[88dvh] flex-col overflow-hidden">
+      <ScrollProgress />
+      <section
+        className="relative isolate flex min-h-[88dvh] flex-col overflow-hidden"
+        onPointerMove={(e) => {
+          if (e.pointerType !== "mouse") return;
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty("--hx", `${e.clientX - r.left}px`);
+          e.currentTarget.style.setProperty("--hy", `${e.clientY - r.top}px`);
+        }}
+      >
         <HeroMap entry={entry} />
+        <div aria-hidden className="hero-spot pointer-events-none absolute inset-0" />
+        <Embers className="opacity-80" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-bg/10" />
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-bg to-transparent" />
         <SiteHeader overlay current="/" />
@@ -89,7 +103,7 @@ export function Landing() {
         <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pb-10 pt-24 sm:px-6">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted">MODIS and VIIRS, harmonized</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-            One consistent record of fire, from two sensors.
+            <SplitWords text="One consistent record of fire, from two sensors." accent="two sensors" />
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
             Satellites disagree about how much is burning. EMBERLINE turns the two NASA fire records into one calendar of burning
@@ -114,12 +128,14 @@ export function Landing() {
             {stats.length > 0 && entry && f ? (
               <>
                 <ul className="grid gap-3 sm:grid-cols-3">
-                  {stats.map((s) => (
-                    <li key={s.label} className="rounded-xl border border-line bg-panel/80 p-4 backdrop-blur">
-                      <p className="num text-2xl font-semibold text-ink sm:text-3xl">{s.value}</p>
+                  {stats.map((s, i) => (
+                    <Reveal as="li" delay={0.9 + i * 0.12} key={s.label} className="rounded-xl border border-line bg-panel/80 p-4 backdrop-blur">
+                      <p className="num text-2xl font-semibold text-ink sm:text-3xl">
+                        <Scramble text={s.value} />
+                      </p>
                       <p className="mt-1 text-sm text-ink">{s.label}</p>
                       <p className="mt-2 text-xs leading-relaxed text-faint">{s.detail}</p>
-                    </li>
+                    </Reveal>
                   ))}
                 </ul>
                 <p className="mt-3 text-xs text-faint">
@@ -145,12 +161,15 @@ export function Landing() {
         </div>
       </section>
 
+      <Marquee items={ready.map((e) => e.name)} />
+
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="text-2xl font-semibold tracking-tight">Four questions, one workspace</h2>
+        <Reveal as="h2" className="text-2xl font-semibold tracking-tight">Four questions, one workspace</Reveal>
         <p className="mt-2 max-w-2xl text-muted">The challenge asks for a consistent calendar of burning activity from two sensor records. This is how each part is answered.</p>
         <ol className="mt-8 grid gap-4 sm:grid-cols-2">
-          {QUESTIONS.map((q) => (
-            <li key={q.n}>
+          {QUESTIONS.map((q, i) => (
+            <Reveal as="li" key={q.n} delay={(i % 2) * 0.1}>
+              <Glow className="h-full rounded-xl">
               <Link
                 href={`/explore?tab=${q.tab}`}
                 className="group block h-full rounded-xl border border-line bg-panel p-5 transition-colors duration-150 hover:border-[var(--border-strong)]"
@@ -162,7 +181,8 @@ export function Landing() {
                   Open in the workspace <ArrowRight aria-hidden className="size-3.5" />
                 </span>
               </Link>
-            </li>
+              </Glow>
+            </Reveal>
           ))}
         </ol>
       </section>
@@ -172,8 +192,8 @@ export function Landing() {
           <h2 id="regions-heading" className="text-2xl font-semibold tracking-tight">The same disagreement, in {ready.length} places</h2>
           <p className="mt-2 max-w-2xl text-muted">Computed from NASA FIRMS data for each region. The ratio is how much more fire power VIIRS records than MODIS on the same days; the bias is what is left after normalising, on years the model never saw.</p>
           <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {ready.map((e) => (
-              <RegionCard key={e.id} e={e} />
+            {ready.map((e, i) => (
+              <RegionCard key={e.id} e={e} i={i} />
             ))}
           </ul>
         </section>
