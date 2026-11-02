@@ -113,7 +113,7 @@ export function Landing() {
           <div className="mt-12 max-w-4xl" aria-live="polite">
             {stats.length > 0 && entry && f ? (
               <>
-                <ul className="grid gap-3 sm:grid-cols-3">
+                <ul className="fade-in grid gap-3 sm:grid-cols-3">
                   {stats.map((s) => (
                     <li key={s.label} className="rounded-xl border border-line bg-panel/80 p-4 backdrop-blur">
                       <p className="num text-2xl font-semibold text-ink sm:text-3xl">{s.value}</p>
@@ -171,7 +171,7 @@ export function Landing() {
         <section aria-labelledby="regions-heading" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
           <h2 id="regions-heading" className="text-2xl font-semibold tracking-tight">The same disagreement, in {ready.length} places</h2>
           <p className="mt-2 max-w-2xl text-muted">Computed from NASA FIRMS data for each region. The ratio is how much more fire power VIIRS records than MODIS on the same days; the bias is what is left after normalising, on years the model never saw.</p>
-          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="fade-in mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {ready.map((e) => (
               <RegionCard key={e.id} e={e} />
             ))}
